@@ -1,0 +1,41 @@
+{"project_info": {
+    "project_number": "1092230304435",
+    "firebase_url": "https://myeta-86326.firebaseio.com",
+    "project_id": "myeta-86326",
+    "storage_bucket": "myeta-86326.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1092230304435:android:7407f20d65332d89",
+        "android_client_info": {
+          "package_name": "com.example.hao.myeta"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1092230304435-4amipu28h4oglc5acc8o7tf5hrcu142d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGuPzSaKjd6RIJHwPeNaNzdgLzAHzap2U"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

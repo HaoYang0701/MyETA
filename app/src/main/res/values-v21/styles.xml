@@ -1,0 +1,27 @@
+<resources>
+
+    <style name="AppTheme.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="MenuButtonsSmall">
+        <item name="fab_size">mini</item>
+        <item name="fab_colorNormal">#F06292</item>
+        <item name="fab_colorPressed">#F48FB1</item>
+        <item name="fab_colorRipple">#F8BBD0</item>
+    </style>
+
+    <style name="MenuButtonsSmall.Green">
+        <item name="fab_colorNormal">#F06292</item>
+        <item name="fab_colorPressed">#F48FB1</item>
+        <item name="fab_colorRipple">#F8BBD0</item>
+    </style>
+
+    <style name="AppTheme.Button" parent="Widget.AppCompat.Button.Colored">
+        <item name="colorButtonNormal">#F06292</item>
+        <item name="android:textColor">#FFFFFF</item>
+    </style>
+</resources>

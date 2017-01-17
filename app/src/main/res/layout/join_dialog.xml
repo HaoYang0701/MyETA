@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:app="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/join_session"
+        android:id="@+id/join_session_textview"
+        android:gravity="center"/>
+
+    <com.wrapp.floatlabelededittext.FloatLabeledEditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/sessionId_floatEdit"
+        android:layout_below="@id/join_session_textview"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp">
+
+        <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/join_sessionID_editText"
+        android:hint="Session Id" />
+
+    </com.wrapp.floatlabelededittext.FloatLabeledEditText>
+
+    <com.wrapp.floatlabelededittext.FloatLabeledEditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/sessionPassword_floatEdit"
+        android:layout_below="@+id/sessionId_floatEdit"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp">
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/join_sessionPassword_editText"
+            android:hint="Session Password" />
+
+    </com.wrapp.floatlabelededittext.FloatLabeledEditText>
+
+    <com.wrapp.floatlabelededittext.FloatLabeledEditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/sessionUserName_floatEdit"
+        android:layout_below="@+id/sessionPassword_floatEdit"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp">
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/join_sessionUserName_editText"
+            android:hint="Name" />
+
+    </com.wrapp.floatlabelededittext.FloatLabeledEditText>
+
+    <Button
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:id="@+id/join_dialog_confirm_button"
+        android:text="@string/join"
+        android:layout_below="@+id/sessionUserName_floatEdit"
+        android:theme="@style/AppTheme.Button">
+    </Button>
+
+
+</RelativeLayout>
