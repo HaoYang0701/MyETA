@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
@@ -24,6 +25,10 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 
+import com.akexorcist.googledirection.DirectionCallback;
+import com.akexorcist.googledirection.GoogleDirection;
+import com.akexorcist.googledirection.constant.AvoidType;
+import com.akexorcist.googledirection.model.Direction;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.common.api.Status;
@@ -37,6 +42,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -45,7 +51,9 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -77,10 +85,14 @@ public class MainActivity extends AppCompatActivity implements
   private static final int MY_PERMISSIONS_REQUEST_FINE_LOCATIONS = 1;
   private static GoogleMap googleMap;
   private static DatabaseReference mfirebaseDatabase;
-  private static String databaseid = "databaseid";
+  public static String databaseid = "databaseid";
+  public static String joinedUserSecondaryId = "joinedusersecondaryid";
   private static String databasepassword = "databasepassword";
   private static String isSessionStarted = "isSessionStarted";
   public static String username = "username";
+  public static String destinationLat = "destinationLat";
+  public static String destinationLong = "destinationLong";
+  public boolean isFirstJoin = false;
   private static SessionAdapter sessionadapter;
   private static SharedPreferences prefs;
   private static LocationAlarmManager locationAlarmManager = new LocationAlarmManager();
@@ -281,6 +293,11 @@ public class MainActivity extends AppCompatActivity implements
         prefs.edit().putString(databaseid, sessionId).apply();
         prefs.edit().putBoolean(isSessionStarted, true).apply();
         prefs.edit().putString(username, user).apply();
+        prefs.edit().putLong(destinationLat,
+            Double.doubleToRawLongBits(endLocation.getLocation().getLatitude())).apply();
+        prefs.edit().putLong(destinationLong,
+            Double.doubleToRawLongBits(endLocation.getLocation().getLongitude())).apply();
+
 
         //add in destination Location
         String destinationSessionId = mfirebaseDatabase.push().getKey();
@@ -289,6 +306,8 @@ public class MainActivity extends AppCompatActivity implements
             .setValue(endLocation);
 
         setUpQuerycallBacks();
+
+        addStartDestinationSteps(currentUserLocation, endLocation.getLocation());
         locationAlarmManager.scheduleAlarm(getApplication(), sessionId, sessionId);
 
         bindAdapterToRecycler();
@@ -296,6 +315,48 @@ public class MainActivity extends AppCompatActivity implements
         //hideFloatingActionButton();
       }
     });
+  }
+
+  private void addStartDestinationSteps(Location currentUserLocation, com.example.hao.myeta.Location location) {
+    GoogleDirection.withServerKey("AIzaSyDaMLLRbHXqa1UB7U_dLXYnr6DuvTvaQYk")
+        .from(new LatLng(currentUserLocation.getLatitude(), currentUserLocation.getLongitude()))
+        .to(new LatLng(location.getLatitude(), location.getLongitude()))
+        .avoid(AvoidType.FERRIES)
+        .execute(new DirectionCallback() {
+          @Override
+          public void onDirectionSuccess(Direction direction, String rawBody) {
+            if(direction.isOK()) {
+              Map<String, Object> childUpdates = new HashMap<>();
+
+              //Firebase needs a custom object with empty constructor
+              ArrayList<CustomLatLng> customDirectionList = new ArrayList<>();
+              ArrayList<LatLng> originalDirections = direction.getRouteList().get(0).getLegList().get(0).getDirectionPoint();
+              int directionSize = direction.getRouteList().get(0).getLegList().get(0).getDirectionPoint().size();
+              if ( directionSize > 0){
+                for (LatLng L : originalDirections){
+                  customDirectionList.add(new CustomLatLng(L.latitude, L.longitude));
+                }
+              }
+              childUpdates.put("/stepArrayList/", customDirectionList);
+
+              //if User clicked join session initially
+              if (isFirstJoin) {
+                String tempSessionId = prefs.getString(joinedUserSecondaryId, getString(R.string.nullValue));
+                mfirebaseDatabase.child(getString(R.string.session) + sessionId)
+                    .child(tempSessionId).updateChildren(childUpdates);
+                isFirstJoin = false;
+              }else {
+                mfirebaseDatabase.child(getString(R.string.session) + sessionId)
+                    .child(sessionId).updateChildren(childUpdates);
+              }
+            } else {
+            }
+          }
+
+          @Override
+          public void onDirectionFailure(Throwable t) {
+          }
+        });
   }
 
   private void dialogEndSessionListener(final Dialog enddialog, Button confirmdialogButton) {
@@ -332,6 +393,8 @@ public class MainActivity extends AppCompatActivity implements
         prefs.edit().putString(databaseid, sessionId).apply();
         prefs.edit().putString(databasepassword, newSessionPassword).apply();
         prefs.edit().putString(username, newSessionName).apply();
+        isFirstJoin = true;
+
         Session newSession = new Session();
         newSession.setUser(newSessionName);
         com.example.hao.myeta.Location location = new com.example.hao.myeta.Location();
@@ -346,6 +409,7 @@ public class MainActivity extends AppCompatActivity implements
         mfirebaseDatabase.child(getString(R.string.session) +
             sessionId).child(newUserKey).setValue(newSession);
 
+        prefs.edit().putString(joinedUserSecondaryId, newUserKey).apply();
         setUpQuerycallBacks();
 
         prefs.edit().putBoolean(isSessionStarted, true).apply();
@@ -387,6 +451,19 @@ public class MainActivity extends AppCompatActivity implements
           Session savedSession =  user.getValue(Session.class);
           listOfSession.add(savedSession);
           MapsUtil.createMarkers(googleMap, listOfMarkers, savedSession);
+          getDirections(savedSession);
+          if (isFirstJoin && savedSession.getUser().equals("Destination")){
+            prefs.edit().putLong(destinationLat,
+                Double.doubleToRawLongBits(savedSession.getLocation().getLatitude())).apply();
+            prefs.edit().putLong(destinationLong,
+                Double.doubleToRawLongBits(savedSession.getLocation().getLongitude())).apply();
+
+            //if the first call when joined : the user has no idea about destination.
+            //we have to add destination from firebase into our app
+            addStartDestinationSteps(currentUserLocation,
+                new com.example.hao.myeta.Location(savedSession.getLocation().getLatitude(),
+                    savedSession.getLocation().getLongitude()));
+          }
         }
         if(listOfMarkers.size() > 1){
           MapsUtil.correctZoom(googleMap, listOfMarkers);
@@ -402,12 +479,26 @@ public class MainActivity extends AppCompatActivity implements
     matchingSession.addValueEventListener(queryListener);
   }
 
+  private void getDirections(Session savedSession) {
+    ArrayList<CustomLatLng> steplist = savedSession.getStepArrayList();
+    if (steplist != null && !steplist.isEmpty()){
+      PolylineOptions directionOptions = new PolylineOptions();
+      directionOptions.color(Color.RED);
+      directionOptions.width(10);
+      for (CustomLatLng step : steplist){
+        directionOptions.add(new LatLng(step.getLat(), step.getLong()));
+      }
+      googleMap.addPolyline(directionOptions);
+    }
+  }
+
   @OnClick(R.id.shareButton)
   void shareSessionId() {
+    String shareableSessionId = prefs.getString(databaseid, getString(R.string.nullValue));
     Intent sendIntent = new Intent();
     sendIntent.setAction(Intent.ACTION_SEND);
     sendIntent.setType("text/plain");
-    sendIntent.putExtra(Intent.EXTRA_TEXT, getString(R.string.share_session_playstore));
+    sendIntent.putExtra(Intent.EXTRA_TEXT, String.format(getString(R.string.share_session_playstore), shareableSessionId));
     startActivity(sendIntent);
   }
 

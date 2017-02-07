@@ -11,10 +11,20 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.Nullable;
-
+import com.akexorcist.googledirection.DirectionCallback;
+import com.akexorcist.googledirection.GoogleDirection;
+import com.akexorcist.googledirection.constant.AvoidType;
+import com.akexorcist.googledirection.model.Direction;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.example.hao.myeta.MainActivity.destinationLat;
+import static com.example.hao.myeta.MainActivity.destinationLong;
 import static com.example.hao.myeta.MainActivity.username;
 
 public class LocationUpdateService extends Service {
@@ -72,7 +82,45 @@ public class LocationUpdateService extends Service {
             mfirebaseDatabase.child(getString(R.string.session) + recievedDatabaseBaseString)
                 .child(recievedSessionString)
                 .setValue(session);
-            stopSelf();
+
+            double endLat = Double.longBitsToDouble(
+                prefs.getLong(destinationLat, Double.doubleToLongBits(0)));
+            double endLong = Double.longBitsToDouble(
+                prefs.getLong(destinationLong, Double.doubleToLongBits(0)));
+
+            GoogleDirection.withServerKey("AIzaSyDaMLLRbHXqa1UB7U_dLXYnr6DuvTvaQYk")
+                .from(new LatLng(location.getLatitude(), location.getLongitude()))
+                .to(new LatLng(endLat, endLong))
+                .avoid(AvoidType.FERRIES)
+                .execute(new DirectionCallback() {
+                  @Override
+                  public void onDirectionSuccess(Direction direction, String rawBody) {
+                    if(direction.isOK()) {
+                      Map<String, Object> childUpdates = new HashMap<>();
+                      ArrayList<CustomLatLng> customDirectionList = new ArrayList<>();
+
+                      ArrayList<LatLng> originalDirections = direction.getRouteList().get(0).getLegList().get(0).getDirectionPoint();
+                      int directionSize = direction.getRouteList().get(0).getLegList().get(0).getDirectionPoint().size();
+                      if ( directionSize > 0){
+                        for (LatLng L : originalDirections){
+                          customDirectionList.add(new CustomLatLng(L.latitude, L.longitude));
+                        }
+                      }
+                      childUpdates.put("/stepArrayList/", customDirectionList);
+                      mfirebaseDatabase.child(getString(R.string.session) + recievedDatabaseBaseString)
+                          .child(recievedSessionString).updateChildren(childUpdates);
+
+                      stopSelf();
+                    } else {
+                      stopSelf();
+                    }
+                  }
+
+                  @Override
+                  public void onDirectionFailure(Throwable t) {
+                    stopSelf();
+                  }
+                });
           }
         };
         LocationUtils myLocation = new LocationUtils();
