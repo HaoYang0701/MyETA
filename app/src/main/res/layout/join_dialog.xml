@@ -30,23 +30,8 @@
     <com.wrapp.floatlabelededittext.FloatLabeledEditText
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/sessionPassword_floatEdit"
-        android:layout_below="@+id/sessionId_floatEdit"
-        android:paddingLeft="16dp"
-        android:paddingRight="16dp">
-        <EditText
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/join_sessionPassword_editText"
-            android:hint="Session Password" />
-
-    </com.wrapp.floatlabelededittext.FloatLabeledEditText>
-
-    <com.wrapp.floatlabelededittext.FloatLabeledEditText
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         android:id="@+id/sessionUserName_floatEdit"
-        android:layout_below="@+id/sessionPassword_floatEdit"
+        android:layout_below="@+id/sessionId_floatEdit"
         android:paddingLeft="16dp"
         android:paddingRight="16dp">
         <EditText

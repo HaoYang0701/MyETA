@@ -27,6 +27,7 @@
                 android:id="@+id/shareButton"
                 android:src="@drawable/ic_menu_share"
                 android:layout_gravity="right"
+                android:visibility="gone"
                 android:background="@color/colorPrimary"
                 />
             </android.support.v7.widget.Toolbar>

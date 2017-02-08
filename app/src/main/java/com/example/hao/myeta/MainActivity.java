@@ -24,6 +24,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 
 import com.akexorcist.googledirection.DirectionCallback;
 import com.akexorcist.googledirection.GoogleDirection;
@@ -69,6 +70,7 @@ public class MainActivity extends AppCompatActivity implements
   @BindView(R.id.drawer_layout) DrawerLayout drawer;
   @BindView(R.id.nav_view) NavigationView navigationView;
   @BindView(R.id.menu_green) FloatingActionMenu floatingActionMenu;
+  @BindView(R.id.placesLinearLayout) LinearLayout linear;
 
   private ArrayList<Marker> listOfMarkers = new ArrayList();
   private DialogManager dialogManager = new DialogManager();
@@ -87,7 +89,6 @@ public class MainActivity extends AppCompatActivity implements
   private static DatabaseReference mfirebaseDatabase;
   public static String databaseid = "databaseid";
   public static String joinedUserSecondaryId = "joinedusersecondaryid";
-  private static String databasepassword = "databasepassword";
   private static String isSessionStarted = "isSessionStarted";
   public static String username = "username";
   public static String destinationLat = "destinationLat";
@@ -96,6 +97,7 @@ public class MainActivity extends AppCompatActivity implements
   private static SessionAdapter sessionadapter;
   private static SharedPreferences prefs;
   private static LocationAlarmManager locationAlarmManager = new LocationAlarmManager();
+  PlaceAutocompleteFragment autocompleteFragment;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -119,7 +121,7 @@ public class MainActivity extends AppCompatActivity implements
 
     navigationView.setNavigationItemSelectedListener(this);
 
-    Boolean isPreviouslyStoredSession = prefs.getBoolean(isSessionStarted, false);
+    boolean isPreviouslyStoredSession = prefs.getBoolean(isSessionStarted, false);
     if (isPreviouslyStoredSession){
       setUpQuerycallBacks();
     }
@@ -220,7 +222,7 @@ public class MainActivity extends AppCompatActivity implements
   }
 
   private void initAutoComplete() {
-    PlaceAutocompleteFragment autocompleteFragment = (PlaceAutocompleteFragment)
+    autocompleteFragment = (PlaceAutocompleteFragment)
         this.getFragmentManager().findFragmentById(R.id.place_autocomplete_fragment);
     autocompleteFragment.setHint(getString(R.string.destination_location));
     autocompleteFragmentListener(autocompleteFragment);
@@ -311,8 +313,12 @@ public class MainActivity extends AppCompatActivity implements
         locationAlarmManager.scheduleAlarm(getApplication(), sessionId, sessionId);
 
         bindAdapterToRecycler();
+        imageButton.setVisibility(View.VISIBLE);
+        if (autocompleteFragment != null){
+          linear.setVisibility(View.GONE);
+        }
         dialog.dismiss();
-        //hideFloatingActionButton();
+        hideFloatingActionButton();
       }
     });
   }
@@ -342,7 +348,8 @@ public class MainActivity extends AppCompatActivity implements
               //if User clicked join session initially
               if (isFirstJoin) {
                 String tempSessionId = prefs.getString(joinedUserSecondaryId, getString(R.string.nullValue));
-                mfirebaseDatabase.child(getString(R.string.session) + sessionId)
+                String parentSessionId = prefs.getString(databaseid, null);
+                mfirebaseDatabase.child(getString(R.string.session) + parentSessionId)
                     .child(tempSessionId).updateChildren(childUpdates);
                 isFirstJoin = false;
               }else {
@@ -363,16 +370,28 @@ public class MainActivity extends AppCompatActivity implements
     confirmdialogButton.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
-        prefs.edit().remove(databaseid).apply();
-        prefs.edit().remove(databasepassword).apply();
-        prefs.edit().putBoolean(isSessionStarted, false).apply();
         if (queryListener != null){
           mfirebaseDatabase.removeEventListener(queryListener);
         }
+        String tempSessionId = prefs.getString(joinedUserSecondaryId, getString(R.string.nullValue));
+
         startSession.setVisibility(View.VISIBLE);
         joinSession.setVisibility(View.VISIBLE);
         endSession.setVisibility(View.GONE);
         locationAlarmManager.cancelAlarm(getApplication());
+
+        setUpLocationCallback();
+        if (!tempSessionId.equals(getString(R.string.nullValue))){
+          mfirebaseDatabase.child(getString(R.string.session) + sessionId)
+              .child(tempSessionId).removeValue();
+        } else{
+          mfirebaseDatabase.child(getString(R.string.session) + sessionId)
+              .child(sessionId).removeValue();
+        }
+        prefs.edit().clear().apply();
+        listOfSession.clear();
+        listOfMarkers.clear();
+        googleMap.clear();
         enddialog.dismiss();
       }
     });
@@ -385,13 +404,10 @@ public class MainActivity extends AppCompatActivity implements
         mfirebaseDatabase = FirebaseDatabase.getInstance().getReference();
         String newSessionId = ((EditText)
             joindialog.findViewById(R.id.join_sessionID_editText)).getText().toString();
-        String newSessionPassword = ((EditText)
-            joindialog.findViewById(R.id.join_sessionPassword_editText)).getText().toString();
         String newSessionName = ((EditText)
             joindialog.findViewById(R.id.join_sessionUserName_editText)).getText().toString();
 
-        prefs.edit().putString(databaseid, sessionId).apply();
-        prefs.edit().putString(databasepassword, newSessionPassword).apply();
+        prefs.edit().putString(databaseid, newSessionId).apply();
         prefs.edit().putString(username, newSessionName).apply();
         isFirstJoin = true;
 
@@ -407,15 +423,21 @@ public class MainActivity extends AppCompatActivity implements
 
         String newUserKey = mfirebaseDatabase.push().getKey();
         mfirebaseDatabase.child(getString(R.string.session) +
-            sessionId).child(newUserKey).setValue(newSession);
+            newSessionId).child(newUserKey).setValue(newSession);
 
         prefs.edit().putString(joinedUserSecondaryId, newUserKey).apply();
         setUpQuerycallBacks();
 
         prefs.edit().putBoolean(isSessionStarted, true).apply();
-        locationAlarmManager.scheduleAlarm(getApplication(), sessionId, newUserKey);
+        locationAlarmManager.scheduleAlarm(getApplication(), newSessionId, newUserKey);
+
+        bindAdapterToRecycler();
+        imageButton.setVisibility(View.VISIBLE);
+        if (autocompleteFragment != null){
+          linear.setVisibility(View.GONE);
+        }
+        hideFloatingActionButton();
         dialog.dismiss();
-        //hideFloatingActionButton();
       }
     });
   }
@@ -440,6 +462,10 @@ public class MainActivity extends AppCompatActivity implements
     queryListener = new ValueEventListener() {
       @Override
       public void onDataChange(DataSnapshot dataSnapshot) {
+        Boolean isPreviouslyStoredSession = prefs.getBoolean(isSessionStarted, false);
+        if (!isPreviouslyStoredSession){
+          return;
+        }
         Iterable<DataSnapshot>  allUsers = dataSnapshot.getChildren();
         Iterator userIterator = allUsers.iterator();
         googleMap.clear();
@@ -498,7 +524,7 @@ public class MainActivity extends AppCompatActivity implements
     Intent sendIntent = new Intent();
     sendIntent.setAction(Intent.ACTION_SEND);
     sendIntent.setType("text/plain");
-    sendIntent.putExtra(Intent.EXTRA_TEXT, String.format(getString(R.string.share_session_playstore), shareableSessionId));
+    sendIntent.putExtra(Intent.EXTRA_TEXT, String.format(getString(R.string.share_session), shareableSessionId));
     startActivity(sendIntent);
   }
 

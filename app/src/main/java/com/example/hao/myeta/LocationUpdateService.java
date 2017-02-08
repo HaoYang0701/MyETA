@@ -73,7 +73,11 @@ public class LocationUpdateService extends Service {
           @Override
           public void gotLocation(android.location.Location location) {
             Session session = new Session();
-            session.setUser(prefs.getString(username, "Placeholder"));
+            String tempusername = prefs.getString(username, null);
+            if (tempusername == null){
+              return;
+            }
+            session.setUser(tempusername);
             com.example.hao.myeta.Location locationObject = new com.example.hao.myeta.Location();
             locationObject.setLatitude(location.getLatitude());
             locationObject.setLongitude(location.getLongitude());

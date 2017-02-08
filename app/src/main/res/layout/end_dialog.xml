@@ -7,7 +7,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/end_dialog_textview"
-        android:text="@string/confirmEnd"/>
+        android:text="@string/confirmEnd"
+        android:gravity="center"/>
 
     <Button
         android:layout_height="wrap_content"
