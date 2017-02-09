@@ -20,4 +20,7 @@
     <string name="confirm">Confirm</string>
     <string name="cancel">Cancel</string>
     <string name="select_location">Please select a location before starting a session</string>
+    <string name="trip_start_location">Location :&#160;</string>
+    <string name="trip_duration">Trip Duration :&#160;</string>
+    <string name="trip_distance">Trip Distance :&#160;</string>
 </resources>

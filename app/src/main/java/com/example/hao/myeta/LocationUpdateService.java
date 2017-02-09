@@ -15,6 +15,7 @@ import com.akexorcist.googledirection.DirectionCallback;
 import com.akexorcist.googledirection.GoogleDirection;
 import com.akexorcist.googledirection.constant.AvoidType;
 import com.akexorcist.googledirection.model.Direction;
+import com.akexorcist.googledirection.model.Leg;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -72,7 +73,7 @@ public class LocationUpdateService extends Service {
         LocationUtils.LocationResult locationResult = new LocationUtils.LocationResult() {
           @Override
           public void gotLocation(android.location.Location location) {
-            Session session = new Session();
+            final Session session = new Session();
             String tempusername = prefs.getString(username, null);
             if (tempusername == null){
               return;
@@ -101,16 +102,26 @@ public class LocationUpdateService extends Service {
                   public void onDirectionSuccess(Direction direction, String rawBody) {
                     if(direction.isOK()) {
                       Map<String, Object> childUpdates = new HashMap<>();
-                      ArrayList<CustomLatLng> customDirectionList = new ArrayList<>();
 
-                      ArrayList<LatLng> originalDirections = direction.getRouteList().get(0).getLegList().get(0).getDirectionPoint();
-                      int directionSize = direction.getRouteList().get(0).getLegList().get(0).getDirectionPoint().size();
+                      TripInfo tripInfo = new TripInfo();
+                      ArrayList<CustomLatLng> customDirectionList = new ArrayList<>();
+                      Leg directionLeg = direction.getRouteList().get(0).getLegList().get(0);
+                      String distance = directionLeg.getDistance().getText();
+                      String duration = directionLeg.getDuration().getText();
+                      String startAddress = directionLeg.getStartAddress().toString();
+                      ArrayList<LatLng> originalDirections = directionLeg.getDirectionPoint();
+                      int directionSize = directionLeg.getDirectionPoint().size();
                       if ( directionSize > 0){
                         for (LatLng L : originalDirections){
                           customDirectionList.add(new CustomLatLng(L.latitude, L.longitude));
                         }
                       }
-                      childUpdates.put("/stepArrayList/", customDirectionList);
+                      tripInfo.setCustomDirectionList(customDirectionList);
+                      tripInfo.setDistance(distance);
+                      tripInfo.setDuration(duration);
+                      tripInfo.setStartAddress(startAddress);
+                      session.setTripInfo(tripInfo);
+                      childUpdates.put("/tripInfo/", tripInfo);
                       mfirebaseDatabase.child(getString(R.string.session) + recievedDatabaseBaseString)
                           .child(recievedSessionString).updateChildren(childUpdates);
 

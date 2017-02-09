@@ -6,10 +6,9 @@ import com.google.android.gms.maps.model.LatLng;
 import java.util.ArrayList;
 
 public class Session {
-  private String password;
   private String user;
   private Location location;
-  private ArrayList<CustomLatLng> stepArrayList;
+  private TripInfo tripInfo;
 
   public Session(){};
 
@@ -21,8 +20,8 @@ public class Session {
     this.location = location;
   }
 
-  public void setStepArrayList (ArrayList<CustomLatLng> steps){
-    this.stepArrayList = steps;
+  public void setTripInfo (TripInfo tripInfo){
+    this.tripInfo = tripInfo;
   }
 
   public String getUser(){
@@ -33,7 +32,7 @@ public class Session {
     return location;
   }
 
-  public ArrayList<CustomLatLng> getStepArrayList(){
-    return stepArrayList;
+  public TripInfo getTripInfo(){
+    return tripInfo;
   }
 }

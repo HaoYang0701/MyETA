@@ -17,11 +17,15 @@ public class SessionAdapter extends RecyclerView.Adapter {
   public static class SessionViewHolder extends RecyclerView.ViewHolder {
     public TextView nameTextview;
     public TextView locationTextview;
+    public TextView durationTextview;
+    public TextView distanceTextview;
 
     public SessionViewHolder(View itemView) {
       super(itemView);
       nameTextview = (TextView) itemView.findViewById(R.id.session_row_name);
-      locationTextview = (TextView) itemView.findViewById(R.id.session_row_location);
+      locationTextview = (TextView) itemView.findViewById(R.id.session_row_starLocation);
+      durationTextview = (TextView) itemView.findViewById(R.id.session_row_Duration);
+      distanceTextview = (TextView) itemView.findViewById(R.id.session_row_Distance);
     }
   }
 
@@ -42,11 +46,19 @@ public class SessionAdapter extends RecyclerView.Adapter {
   @Override
   public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
     Session session = sessionList.get(position);
+    TripInfo tripInfo = session.getTripInfo();
     tempviewHolder = holder;
+
     TextView sessionUser = ((SessionViewHolder)tempviewHolder).nameTextview;
     sessionUser.setText(session.getUser());
-    TextView sessionLocation = ((SessionViewHolder)tempviewHolder).locationTextview;
-    sessionLocation.setText(String.valueOf(session.getLocation().getLatitude()));
+    if (tripInfo != null){
+      TextView sessionLocation = ((SessionViewHolder)tempviewHolder).locationTextview;
+      sessionLocation.setText(context.getString(R.string.trip_start_location) + tripInfo.getStartAddress());
+      TextView sessionDuration = ((SessionViewHolder)tempviewHolder).durationTextview;
+      sessionDuration.setText(context.getString(R.string.trip_duration) + tripInfo.getDuration());
+      TextView sessionDistance = ((SessionViewHolder)tempviewHolder).distanceTextview;
+      sessionDistance.setText(context.getString(R.string.trip_distance) + tripInfo.getDistance());
+    }
   }
 
   @Override

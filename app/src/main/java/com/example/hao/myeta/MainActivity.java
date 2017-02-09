@@ -30,6 +30,7 @@ import com.akexorcist.googledirection.DirectionCallback;
 import com.akexorcist.googledirection.GoogleDirection;
 import com.akexorcist.googledirection.constant.AvoidType;
 import com.akexorcist.googledirection.model.Direction;
+import com.akexorcist.googledirection.model.Leg;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.common.api.Status;
@@ -54,6 +55,7 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import butterknife.BindView;
@@ -71,6 +73,7 @@ public class MainActivity extends AppCompatActivity implements
   @BindView(R.id.nav_view) NavigationView navigationView;
   @BindView(R.id.menu_green) FloatingActionMenu floatingActionMenu;
   @BindView(R.id.placesLinearLayout) LinearLayout linear;
+  @BindView(R.id.rv_linear_layout) LinearLayout rvlinear;
 
   private ArrayList<Marker> listOfMarkers = new ArrayList();
   private DialogManager dialogManager = new DialogManager();
@@ -129,6 +132,7 @@ public class MainActivity extends AppCompatActivity implements
 
   public void bindAdapterToRecycler(){
     RecyclerView rvSession = (RecyclerView) findViewById(R.id.rvSessions);
+    rvlinear.setVisibility(View.VISIBLE);
     sessionadapter = new SessionAdapter(this, listOfSession);
     rvSession.setAdapter(sessionadapter);
     rvSession.setLayoutManager(new LinearLayoutManager(this));
@@ -335,15 +339,24 @@ public class MainActivity extends AppCompatActivity implements
               Map<String, Object> childUpdates = new HashMap<>();
 
               //Firebase needs a custom object with empty constructor
+              TripInfo tripInfo = new TripInfo();
               ArrayList<CustomLatLng> customDirectionList = new ArrayList<>();
-              ArrayList<LatLng> originalDirections = direction.getRouteList().get(0).getLegList().get(0).getDirectionPoint();
-              int directionSize = direction.getRouteList().get(0).getLegList().get(0).getDirectionPoint().size();
+              Leg directionLeg = direction.getRouteList().get(0).getLegList().get(0);
+              String distance = directionLeg.getDistance().getText();
+              String duration = directionLeg.getDuration().getText();
+              String startAddress = directionLeg.getStartAddress().toString();
+              ArrayList<LatLng> originalDirections = directionLeg.getDirectionPoint();
+              int directionSize = directionLeg.getDirectionPoint().size();
               if ( directionSize > 0){
                 for (LatLng L : originalDirections){
                   customDirectionList.add(new CustomLatLng(L.latitude, L.longitude));
                 }
               }
-              childUpdates.put("/stepArrayList/", customDirectionList);
+              tripInfo.setCustomDirectionList(customDirectionList);
+              tripInfo.setDistance(distance);
+              tripInfo.setDuration(duration);
+              tripInfo.setStartAddress(startAddress);
+              childUpdates.put("/tripInfo/", tripInfo);
 
               //if User clicked join session initially
               if (isFirstJoin) {
@@ -374,22 +387,28 @@ public class MainActivity extends AppCompatActivity implements
           mfirebaseDatabase.removeEventListener(queryListener);
         }
         String tempSessionId = prefs.getString(joinedUserSecondaryId, getString(R.string.nullValue));
-
+        String parentSessionId = prefs.getString(databaseid, null);
         startSession.setVisibility(View.VISIBLE);
         joinSession.setVisibility(View.VISIBLE);
         endSession.setVisibility(View.GONE);
         locationAlarmManager.cancelAlarm(getApplication());
 
         setUpLocationCallback();
-        if (!tempSessionId.equals(getString(R.string.nullValue))){
-          mfirebaseDatabase.child(getString(R.string.session) + sessionId)
+        if (!tempSessionId.equals(getString(R.string.nullValue)) && parentSessionId != null){
+          mfirebaseDatabase.child(getString(R.string.session) + parentSessionId)
               .child(tempSessionId).removeValue();
         } else{
-          mfirebaseDatabase.child(getString(R.string.session) + sessionId)
-              .child(sessionId).removeValue();
+          if (parentSessionId != null){
+            mfirebaseDatabase.child(getString(R.string.session) + parentSessionId)
+                .child(parentSessionId).removeValue();
+          }
         }
         prefs.edit().clear().apply();
         listOfSession.clear();
+        if (sessionadapter != null){
+          sessionadapter.notifyDataSetChanged();
+        }
+        rvlinear.setVisibility(View.GONE);
         listOfMarkers.clear();
         googleMap.clear();
         enddialog.dismiss();
@@ -475,7 +494,9 @@ public class MainActivity extends AppCompatActivity implements
         while(userIterator.hasNext()){
           DataSnapshot user = (DataSnapshot) userIterator.next();
           Session savedSession =  user.getValue(Session.class);
-          listOfSession.add(savedSession);
+          if (!savedSession.getUser().equals("Destination")){
+            listOfSession.add(savedSession);
+          }
           MapsUtil.createMarkers(googleMap, listOfMarkers, savedSession);
           getDirections(savedSession);
           if (isFirstJoin && savedSession.getUser().equals("Destination")){
@@ -506,7 +527,11 @@ public class MainActivity extends AppCompatActivity implements
   }
 
   private void getDirections(Session savedSession) {
-    ArrayList<CustomLatLng> steplist = savedSession.getStepArrayList();
+    TripInfo tripInfo = savedSession.getTripInfo();
+    if (tripInfo == null){
+      return;
+    }
+    ArrayList<CustomLatLng> steplist = tripInfo.getCustomDirectionList();
     if (steplist != null && !steplist.isEmpty()){
       PolylineOptions directionOptions = new PolylineOptions();
       directionOptions.color(Color.RED);

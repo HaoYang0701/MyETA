@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:orientation="vertical"
               android:layout_width="match_parent"
               android:layout_height="wrap_content">
@@ -8,18 +8,38 @@
         android:id="@+id/session_row_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
+        android:layout_marginTop="2dp"
+        android:gravity="center"
         />
 
     <TextView
-        android:id="@+id/session_row_location"
+        android:id="@+id/session_row_starLocation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_below="@+id/session_row_name"
+        android:gravity="center"
+        />
+
+    <TextView
+        android:id="@+id/session_row_Duration"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/session_row_starLocation"
+        android:gravity="center"
+        />
+
+    <TextView
+        android:id="@+id/session_row_Distance"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/session_row_Duration"
+        android:gravity="center"
         />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="@color/colorGray">
+        android:background="@color/colorGray"
+        android:layout_below="@+id/session_row_Distance">
     </LinearLayout>
-</LinearLayout>
+</RelativeLayout>
