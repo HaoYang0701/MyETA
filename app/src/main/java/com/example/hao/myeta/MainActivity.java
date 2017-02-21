@@ -10,7 +10,6 @@ import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.Parcelable;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -57,7 +56,6 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import butterknife.BindView;
@@ -78,18 +76,22 @@ public class MainActivity extends AppCompatActivity implements
   @BindView(R.id.rv_linear_layout) LinearLayout rvlinear;
 
   private ArrayList<Marker> listOfMarkers = new ArrayList();
-  private DialogManager dialogManager = new DialogManager();
   private String sessionId;
   private Dialog startdialog;
   private Dialog joindialog;
   private Dialog enddialog;
+  private Marker currentMarker;
+  private LatLng currentLocation;
   private Location currentUserLocation;
   private Session endLocation = null;
-  private ArrayList<Session> listOfSession = new ArrayList<Session>();
+  private ArrayList<Session> listOfSession = new ArrayList<>();
   private ValueEventListener queryListener;
-  private Handler locationHandler;
-  private RecyclerView rvSession;
+  public boolean isFirstJoin = false;
+  private PlaceAutocompleteFragment autocompleteFragment;
 
+  private static SharedPreferences prefs;
+  private static DialogManager dialogManager = new DialogManager();
+  private static LocationAlarmManager locationAlarmManager = new LocationAlarmManager();
   private static final int MY_PERMISSIONS_REQUEST_FINE_LOCATIONS = 1;
   private static GoogleMap googleMap;
   private static DatabaseReference mfirebaseDatabase;
@@ -99,13 +101,7 @@ public class MainActivity extends AppCompatActivity implements
   public static String username = "username";
   public static String destinationLat = "destinationLat";
   public static String destinationLong = "destinationLong";
-  public boolean isFirstJoin = false;
   private static SessionAdapter sessionadapter;
-  private static SharedPreferences prefs;
-  private static LocationAlarmManager locationAlarmManager = new LocationAlarmManager();
-  PlaceAutocompleteFragment autocompleteFragment;
-  private Marker currentMarker;
-  private LatLng currentLocation;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -114,7 +110,6 @@ public class MainActivity extends AppCompatActivity implements
     ButterKnife.bind(this);
     setSupportActionBar(toolbar);
 
-    endSession.setVisibility(View.GONE);
     prefs = this.getSharedPreferences("com.example.hao.myeta", Context.MODE_PRIVATE);
 
     SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -136,7 +131,7 @@ public class MainActivity extends AppCompatActivity implements
   }
 
   public void bindAdapterToRecycler(ArrayList<Session> list){
-    rvSession = (RecyclerView) findViewById(R.id.rvSessions);
+    RecyclerView rvSession = (RecyclerView) findViewById(R.id.rvSessions);
     rvlinear.setVisibility(View.VISIBLE);
     sessionadapter = new SessionAdapter(this, list);
     rvSession.setAdapter(sessionadapter);
@@ -259,7 +254,7 @@ public class MainActivity extends AppCompatActivity implements
 
   private synchronized void setCurrentLocationMarker(double latitude, double longitude) {
     currentLocation = new LatLng(latitude, longitude);
-    locationHandler = new Handler(Looper.getMainLooper());
+    Handler locationHandler = new Handler(Looper.getMainLooper());
     Runnable task = new Runnable() {
       @Override
       public void run() {

@@ -78,7 +78,8 @@
             android:id="@+id/fab_end_session"
             android:src="@drawable/ic_cancel_white_36dp"
             fab:fab_label="End Session"
-            style="@style/MenuButtonsSmall.Green" />
+            style="@style/MenuButtonsSmall.Green"
+            android:visibility="gone"/>
 
     </com.github.clans.fab.FloatingActionMenu>
 
