@@ -10,6 +10,7 @@ import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Parcelable;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -18,6 +19,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.AttributeSet;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -83,9 +85,10 @@ public class MainActivity extends AppCompatActivity implements
   private Dialog enddialog;
   private Location currentUserLocation;
   private Session endLocation = null;
-  private ArrayList<Session> listOfSession = new ArrayList<>();
+  private ArrayList<Session> listOfSession = new ArrayList<Session>();
   private ValueEventListener queryListener;
   private Handler locationHandler;
+  private RecyclerView rvSession;
 
   private static final int MY_PERMISSIONS_REQUEST_FINE_LOCATIONS = 1;
   private static GoogleMap googleMap;
@@ -101,6 +104,8 @@ public class MainActivity extends AppCompatActivity implements
   private static SharedPreferences prefs;
   private static LocationAlarmManager locationAlarmManager = new LocationAlarmManager();
   PlaceAutocompleteFragment autocompleteFragment;
+  private Marker currentMarker;
+  private LatLng currentLocation;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -130,10 +135,10 @@ public class MainActivity extends AppCompatActivity implements
     }
   }
 
-  public void bindAdapterToRecycler(){
-    RecyclerView rvSession = (RecyclerView) findViewById(R.id.rvSessions);
+  public void bindAdapterToRecycler(ArrayList<Session> list){
+    rvSession = (RecyclerView) findViewById(R.id.rvSessions);
     rvlinear.setVisibility(View.VISIBLE);
-    sessionadapter = new SessionAdapter(this, listOfSession);
+    sessionadapter = new SessionAdapter(this, list);
     rvSession.setAdapter(sessionadapter);
     rvSession.setLayoutManager(new LinearLayoutManager(this));
   }
@@ -143,7 +148,7 @@ public class MainActivity extends AppCompatActivity implements
     this.googleMap = googleMap;
     if (PermissionUtil.isLocationPermissionsOn(this)) {
       setUpLocationCallback();
-    }else{
+    }else if (!PermissionUtil.isLocationPermissionsOn(this)){
       PermissionUtil.checkLocationPermissions(this);
     }
   }
@@ -172,6 +177,46 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     return super.onOptionsItemSelected(item);
+  }
+
+  @Override
+  protected void onSaveInstanceState(Bundle outState) {
+    super.onSaveInstanceState(outState);
+    outState.putInt("isRecyclerVisible", rvlinear.getVisibility());
+    outState.putParcelableArrayList("savedSessionList", listOfSession);
+    outState.putParcelable("currentLocationMarker", currentLocation);
+  }
+
+  @SuppressWarnings("WrongConstant")
+  @Override
+  protected void onRestoreInstanceState(Bundle savedInstanceState) {
+    super.onRestoreInstanceState(savedInstanceState);
+    if (savedInstanceState != null){
+      rvlinear.setVisibility(savedInstanceState.getInt("isRecyclerVisible"));
+      listOfSession = savedInstanceState.getParcelableArrayList("savedSessionList");
+      bindAdapterToRecycler(listOfSession);
+      currentLocation = savedInstanceState.getParcelable("currentLocationMarker");
+      if (currentLocation != null){
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15));
+      }
+    }
+  }
+
+  @Override
+  protected void onResume() {
+    super.onResume();
+  }
+
+  @Override
+  protected void onDestroy() {
+    super.onDestroy();
+    mfirebaseDatabase.removeEventListener(queryListener);
+    queryListener = null;
+  }
+
+  @Override
+  public View onCreateView(View parent, String name, Context context, AttributeSet attrs) {
+    return super.onCreateView(parent, name, context, attrs);
   }
 
   @SuppressWarnings("StatementWithEmptyBody")
@@ -212,13 +257,17 @@ public class MainActivity extends AppCompatActivity implements
     }
   }
 
-  private void setCurrentLocationMarker(double latitude, double longitude) {
-    final LatLng currentLocation = new LatLng(latitude, longitude);
+  private synchronized void setCurrentLocationMarker(double latitude, double longitude) {
+    currentLocation = new LatLng(latitude, longitude);
     locationHandler = new Handler(Looper.getMainLooper());
     Runnable task = new Runnable() {
       @Override
       public void run() {
-        googleMap.addMarker(new MarkerOptions().position(currentLocation).title("Current Location"));
+        if (currentMarker != null){
+          currentMarker.remove();
+        }
+        MarkerOptions markerOptions = new MarkerOptions().position(currentLocation).title("Current Location");
+        currentMarker = googleMap.addMarker(markerOptions);
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15));
       }
     };
@@ -316,7 +365,7 @@ public class MainActivity extends AppCompatActivity implements
         addStartDestinationSteps(currentUserLocation, endLocation.getLocation());
         locationAlarmManager.scheduleAlarm(getApplication(), sessionId, sessionId);
 
-        bindAdapterToRecycler();
+        bindAdapterToRecycler(listOfSession);
         imageButton.setVisibility(View.VISIBLE);
         if (autocompleteFragment != null){
           linear.setVisibility(View.GONE);
@@ -450,7 +499,7 @@ public class MainActivity extends AppCompatActivity implements
         prefs.edit().putBoolean(isSessionStarted, true).apply();
         locationAlarmManager.scheduleAlarm(getApplication(), newSessionId, newUserKey);
 
-        bindAdapterToRecycler();
+        bindAdapterToRecycler(listOfSession);
         imageButton.setVisibility(View.VISIBLE);
         if (autocompleteFragment != null){
           linear.setVisibility(View.GONE);
