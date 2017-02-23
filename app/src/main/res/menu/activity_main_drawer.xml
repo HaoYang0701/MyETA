@@ -3,33 +3,36 @@
 
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/nav_camera"
-            android:icon="@drawable/ic_menu_camera"
-            android:title="Import"/>
+            android:title="Application Settings">
+            <menu>
         <item
-            android:id="@+id/nav_gallery"
-            android:icon="@drawable/ic_menu_gallery"
-            android:title="Gallery"/>
+            android:id="@+id/nav_update"
+            android:icon="@drawable/ic_update_black_18dp"
+            android:title="Map update interval"/>
+
         <item
-            android:id="@+id/nav_slideshow"
-            android:icon="@drawable/ic_menu_slideshow"
-            android:title="Slideshow"/>
+            android:id="@+id/nav_turn_off"
+            android:icon="@drawable/ic_location_off_black_18dp"
+            android:title="Auto turn off time"/>
+
         <item
-            android:id="@+id/nav_manage"
-            android:icon="@drawable/ic_menu_manage"
-            android:title="Tools"/>
+            android:id="@+id/nav_color"
+            android:icon="@drawable/ic_color_lens_black_18dp"
+            android:title="Map marker colors"/>
+            </menu>
+        </item>
     </group>
 
-    <item android:title="Communicate">
+    <item android:title="Share">
         <menu>
             <item
                 android:id="@+id/nav_share"
-                android:icon="@drawable/ic_menu_share"
-                android:title="Share"/>
+                android:icon="@drawable/ic_share_black_18dp"
+                android:title="Share Session"/>
             <item
-                android:id="@+id/nav_send"
-                android:icon="@drawable/ic_menu_send"
-                android:title="Send"/>
+                android:id="@+id/nav_playstore"
+                android:icon="@drawable/ic_shop_black_18dp"
+                android:title="Send App Link"/>
         </menu>
     </item>
 

@@ -19,6 +19,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.AttributeSet;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -102,6 +103,7 @@ public class MainActivity extends AppCompatActivity implements
   public static String destinationLat = "destinationLat";
   public static String destinationLong = "destinationLong";
   private static SessionAdapter sessionadapter;
+  boolean isPreviouslyStoredSession;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -124,9 +126,12 @@ public class MainActivity extends AppCompatActivity implements
 
     navigationView.setNavigationItemSelectedListener(this);
 
-    boolean isPreviouslyStoredSession = prefs.getBoolean(isSessionStarted, false);
+    isPreviouslyStoredSession = prefs.getBoolean(isSessionStarted, false);
     if (isPreviouslyStoredSession){
       setUpQuerycallBacks();
+      hideFloatingActionButton();
+      linear.setVisibility(View.GONE);
+      imageButton.setVisibility(View.VISIBLE);
     }
   }
 
@@ -168,6 +173,7 @@ public class MainActivity extends AppCompatActivity implements
     int id = item.getItemId();
 
     if (id == R.id.action_settings) {
+      drawer.openDrawer(GravityCompat.START);
       return true;
     }
 
@@ -219,17 +225,13 @@ public class MainActivity extends AppCompatActivity implements
   public boolean onNavigationItemSelected(MenuItem item) {
     int id = item.getItemId();
 
-    if (id == R.id.nav_camera) {
-    } else if (id == R.id.nav_gallery) {
+    if (id == R.id.nav_update) {
+    } else if (id == R.id.nav_turn_off) {
 
-    } else if (id == R.id.nav_slideshow) {
+    } else if (id == R.id.nav_color) {
+    }else if (id == R.id.nav_share) {
 
-    } else if (id == R.id.nav_manage) {
-
-    } else if (id == R.id.nav_share) {
-
-    } else if (id == R.id.nav_send) {
-
+    } else if (id == R.id.nav_playstore) {
     }
     drawer.closeDrawer(GravityCompat.START);
     return true;
@@ -455,6 +457,8 @@ public class MainActivity extends AppCompatActivity implements
         rvlinear.setVisibility(View.GONE);
         listOfMarkers.clear();
         googleMap.clear();
+        linear.setVisibility(View.VISIBLE);
+        imageButton.setVisibility(View.GONE);
         enddialog.dismiss();
       }
     });
@@ -561,6 +565,9 @@ public class MainActivity extends AppCompatActivity implements
         }
         if (sessionadapter != null){
           sessionadapter.notifyDataSetChanged();
+        }
+        if (isPreviouslyStoredSession && listOfSession.size() > 0){
+          bindAdapterToRecycler(listOfSession);
         }
       }
       @Override
