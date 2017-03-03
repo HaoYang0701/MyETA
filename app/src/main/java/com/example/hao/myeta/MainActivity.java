@@ -2,7 +2,6 @@ package com.example.hao.myeta;
 
 import android.app.Dialog;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -19,15 +18,15 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.AttributeSet;
-import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
-
+import android.widget.Switch;
 import com.akexorcist.googledirection.DirectionCallback;
 import com.akexorcist.googledirection.GoogleDirection;
 import com.akexorcist.googledirection.constant.AvoidType;
@@ -53,57 +52,66 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
-
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import java.util.Map;
+import org.adw.library.widgets.discreteseekbar.DiscreteSeekBar;
+
+import static com.example.hao.myeta.ShareUtils.createPlaystoreIntent;
+import static com.example.hao.myeta.ShareUtils.createShareSessionIntent;
 
 public class MainActivity extends AppCompatActivity implements
     NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback {
-  @BindView(R.id.fab_start_session) FloatingActionButton startSession;
-  @BindView(R.id.fab_join_session) FloatingActionButton joinSession;
-  @BindView(R.id.fab_end_session) FloatingActionButton endSession;
+  @BindView(R.id.fab_start_session) FloatingActionButton startSessionButton;
+  @BindView(R.id.fab_join_session) FloatingActionButton joinSessionButton;
+  @BindView(R.id.fab_end_session) FloatingActionButton endSessionButton;
   @BindView(R.id.toolbar) Toolbar toolbar;
-  @BindView(R.id.shareButton) ImageButton imageButton;
+  @BindView(R.id.shareButton) ImageButton shareImageButton;
   @BindView(R.id.drawer_layout) DrawerLayout drawer;
   @BindView(R.id.nav_view) NavigationView navigationView;
   @BindView(R.id.menu_green) FloatingActionMenu floatingActionMenu;
-  @BindView(R.id.placesLinearLayout) LinearLayout linear;
-  @BindView(R.id.rv_linear_layout) LinearLayout rvlinear;
+  @BindView(R.id.placesLinearLayout) LinearLayout placesLinearLayout;
+  @BindView(R.id.rv_linear_layout) LinearLayout recyclerViewLinearLayout;
 
-  private ArrayList<Marker> listOfMarkers = new ArrayList();
-  private String sessionId;
-  private Dialog startdialog;
-  private Dialog joindialog;
-  private Dialog enddialog;
+  private ArrayList<Marker> listOfMarkers;
+  private ArrayList<Session> listOfSession;
+
+  private Dialog startDialog;
+  private Dialog joinDialog;
+  private Dialog endDialog;
+  private Dialog mapUpdateDialog;
+  private Dialog randomColorDialog;
+
   private Marker currentMarker;
   private LatLng currentLocation;
   private Location currentUserLocation;
   private Session endLocation = null;
-  private ArrayList<Session> listOfSession = new ArrayList<>();
   private ValueEventListener queryListener;
-  public boolean isFirstJoin = false;
+  private boolean isFirstJoin = false;
+  private boolean isPreviouslyStoredSession;
   private PlaceAutocompleteFragment autocompleteFragment;
-
-  private static SharedPreferences prefs;
-  private static DialogManager dialogManager = new DialogManager();
-  private static LocationAlarmManager locationAlarmManager = new LocationAlarmManager();
-  private static final int MY_PERMISSIONS_REQUEST_FINE_LOCATIONS = 1;
-  private static GoogleMap googleMap;
-  private static DatabaseReference mfirebaseDatabase;
-  public static String databaseid = "databaseid";
-  public static String joinedUserSecondaryId = "joinedusersecondaryid";
-  private static String isSessionStarted = "isSessionStarted";
-  public static String username = "username";
-  public static String destinationLat = "destinationLat";
-  public static String destinationLong = "destinationLong";
   private static SessionAdapter sessionadapter;
-  boolean isPreviouslyStoredSession;
+  private String sessionId;
+
+  private static GoogleMap googleMap;
+  private static SharedPreferences prefs;
+  private static DialogManager dialogManager;
+  private static LocationAlarmManager locationAlarmManager;
+  private static final int MY_PERMISSIONS_REQUEST_FINE_LOCATIONS = 1;
+  private static DatabaseReference mfirebaseDatabase;
+  public static String DATABASE_ID = "DATABASE_ID";
+  private static String IS_RANDOM_COLOR_ENABLED = "IS_RANDOM_COLOR_ENABLED";
+  private static String JOINED_USER_SECONDARY_ID = "JOINED_USER_SECONDARY_ID";
+  private static String IS_SESSION_STARTED = "IS_SESSION_STARTED";
+
+  public static String USERNAME = "USERNAME";
+  public static String DESTINATION_LATITUDE = "DESTINATION_LATITUDE";
+  public static String DESTINATION_LONGITUDE = "DESTINATION_LONGITUDE";
+  public static String MAP_UPDATE_TIMER = "MAP_UPDATE_TIMER";
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -112,35 +120,25 @@ public class MainActivity extends AppCompatActivity implements
     ButterKnife.bind(this);
     setSupportActionBar(toolbar);
 
-    prefs = this.getSharedPreferences("com.example.hao.myeta", Context.MODE_PRIVATE);
-
     SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
         .findFragmentById(R.id.map);
     mapFragment.getMapAsync(this);
-
-    initAutoComplete();
 
     ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
         this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
     toggle.syncState();
 
+    initializeVariables();
+
     navigationView.setNavigationItemSelectedListener(this);
 
-    isPreviouslyStoredSession = prefs.getBoolean(isSessionStarted, false);
-    if (isPreviouslyStoredSession){
+    isPreviouslyStoredSession = prefs.getBoolean(IS_SESSION_STARTED, false);
+    if (isPreviouslyStoredSession) {
       setUpQuerycallBacks();
       hideFloatingActionButton();
-      linear.setVisibility(View.GONE);
-      imageButton.setVisibility(View.VISIBLE);
+      placesLinearLayout.setVisibility(View.GONE);
+      shareImageButton.setVisibility(View.VISIBLE);
     }
-  }
-
-  public void bindAdapterToRecycler(ArrayList<Session> list){
-    RecyclerView rvSession = (RecyclerView) findViewById(R.id.rvSessions);
-    rvlinear.setVisibility(View.VISIBLE);
-    sessionadapter = new SessionAdapter(this, list);
-    rvSession.setAdapter(sessionadapter);
-    rvSession.setLayoutManager(new LinearLayoutManager(this));
   }
 
   @Override
@@ -148,9 +146,17 @@ public class MainActivity extends AppCompatActivity implements
     this.googleMap = googleMap;
     if (PermissionUtil.isLocationPermissionsOn(this)) {
       setUpLocationCallback();
-    }else if (!PermissionUtil.isLocationPermissionsOn(this)){
+    } else if (!PermissionUtil.isLocationPermissionsOn(this)) {
       PermissionUtil.checkLocationPermissions(this);
     }
+  }
+
+  public void bindAdapterToRecycler(ArrayList<Session> list) {
+    RecyclerView rvSession = (RecyclerView) findViewById(R.id.rvSessions);
+    recyclerViewLinearLayout.setVisibility(View.VISIBLE);
+    sessionadapter = new SessionAdapter(this, list);
+    rvSession.setAdapter(sessionadapter);
+    rvSession.setLayoutManager(new LinearLayoutManager(this));
   }
 
   @Override
@@ -170,20 +176,17 @@ public class MainActivity extends AppCompatActivity implements
 
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
-    int id = item.getItemId();
-
-    if (id == R.id.action_settings) {
+    if (item.getItemId() == R.id.action_settings) {
       drawer.openDrawer(GravityCompat.START);
       return true;
     }
-
     return super.onOptionsItemSelected(item);
   }
 
   @Override
   protected void onSaveInstanceState(Bundle outState) {
     super.onSaveInstanceState(outState);
-    outState.putInt("isRecyclerVisible", rvlinear.getVisibility());
+    outState.putInt("isRecyclerVisible", recyclerViewLinearLayout.getVisibility());
     outState.putParcelableArrayList("savedSessionList", listOfSession);
     outState.putParcelable("currentLocationMarker", currentLocation);
   }
@@ -192,20 +195,15 @@ public class MainActivity extends AppCompatActivity implements
   @Override
   protected void onRestoreInstanceState(Bundle savedInstanceState) {
     super.onRestoreInstanceState(savedInstanceState);
-    if (savedInstanceState != null){
-      rvlinear.setVisibility(savedInstanceState.getInt("isRecyclerVisible"));
+    if (savedInstanceState != null) {
+      recyclerViewLinearLayout.setVisibility(savedInstanceState.getInt("isRecyclerVisible"));
       listOfSession = savedInstanceState.getParcelableArrayList("savedSessionList");
       bindAdapterToRecycler(listOfSession);
       currentLocation = savedInstanceState.getParcelable("currentLocationMarker");
-      if (currentLocation != null){
+      if (currentLocation != null) {
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15));
       }
     }
-  }
-
-  @Override
-  protected void onResume() {
-    super.onResume();
   }
 
   @Override
@@ -226,15 +224,67 @@ public class MainActivity extends AppCompatActivity implements
     int id = item.getItemId();
 
     if (id == R.id.nav_update) {
-    } else if (id == R.id.nav_turn_off) {
-
+      setupUpdateTimeDialog();
     } else if (id == R.id.nav_color) {
-    }else if (id == R.id.nav_share) {
-
+      setupRandomColorDialog();
+    } else if (id == R.id.nav_share) {
+      createShareSessionIntent(MainActivity.this, prefs);
     } else if (id == R.id.nav_playstore) {
+      createPlaystoreIntent(MainActivity.this);
     }
     drawer.closeDrawer(GravityCompat.START);
     return true;
+  }
+
+  private void setupRandomColorDialog() {
+    randomColorDialog = new Dialog(this);
+    randomColorDialog.setContentView(R.layout.random_color_dialog);
+    dialogManager.expandWindow(randomColorDialog);
+    final Switch colorSwitch = (Switch) randomColorDialog.findViewById(R.id.color_switch);
+
+    colorSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+      @Override
+      public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+        prefs.edit().putBoolean(IS_RANDOM_COLOR_ENABLED, isChecked).apply();
+      }
+    });
+
+    Button canceldialogButton = (Button) randomColorDialog.findViewById(R.id.color_close);
+    canceldialogButton.setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        randomColorDialog.dismiss();
+      }
+    });
+    randomColorDialog.show();
+  }
+
+  private void setupUpdateTimeDialog() {
+    mapUpdateDialog = new Dialog(this);
+    mapUpdateDialog.setContentView(R.layout.update_time_dialog);
+    dialogManager.expandWindow(mapUpdateDialog);
+    mapUpdateDialog.show();
+    Button confirmdialogButton = (Button) mapUpdateDialog.findViewById(R.id.time_update_confirm);
+    updateTimeListener(mapUpdateDialog, confirmdialogButton);
+    Button canceldialogButton = (Button) mapUpdateDialog.findViewById(R.id.time_update_cancel);
+    canceldialogButton.setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        mapUpdateDialog.dismiss();
+      }
+    });
+  }
+
+  private void updateTimeListener(final Dialog dialog, Button confirmdialogButton) {
+    confirmdialogButton.setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        DiscreteSeekBar slidebar = (DiscreteSeekBar) dialog.findViewById(R.id.update_seek_bar);
+        long updateTimer = slidebar.getProgress() * 60 * 1000;
+        prefs.edit().putLong(MAP_UPDATE_TIMER, updateTimer).apply();
+        dialog.dismiss();
+      }
+    });
   }
 
   @Override
@@ -260,10 +310,12 @@ public class MainActivity extends AppCompatActivity implements
     Runnable task = new Runnable() {
       @Override
       public void run() {
-        if (currentMarker != null){
+        if (currentMarker != null) {
           currentMarker.remove();
         }
-        MarkerOptions markerOptions = new MarkerOptions().position(currentLocation).title("Current Location");
+        MarkerOptions markerOptions = new MarkerOptions()
+            .position(currentLocation)
+            .title("Current Location");
         currentMarker = googleMap.addMarker(markerOptions);
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15));
       }
@@ -271,7 +323,13 @@ public class MainActivity extends AppCompatActivity implements
     locationHandler.post(task);
   }
 
-  private void initAutoComplete() {
+  private void initializeVariables() {
+    prefs = this.getSharedPreferences("com.example.hao.myeta", Context.MODE_PRIVATE);
+    listOfMarkers = new ArrayList();
+    listOfSession = new ArrayList();
+    dialogManager = new DialogManager();
+    locationAlarmManager = new LocationAlarmManager();
+
     autocompleteFragment = (PlaceAutocompleteFragment)
         this.getFragmentManager().findFragmentById(R.id.place_autocomplete_fragment);
     autocompleteFragment.setHint(getString(R.string.destination_location));
@@ -294,8 +352,8 @@ public class MainActivity extends AppCompatActivity implements
     autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
       @Override
       public void onPlaceSelected(Place place) {
-        if (googleMap != null){
-          if(mfirebaseDatabase == null){
+        if (googleMap != null) {
+          if (mfirebaseDatabase == null) {
             mfirebaseDatabase = FirebaseDatabase.getInstance().getReference();
           }
           String user = "Destination";
@@ -320,10 +378,10 @@ public class MainActivity extends AppCompatActivity implements
     dialogButton.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
-        if(mfirebaseDatabase == null){
+        if (mfirebaseDatabase == null) {
           mfirebaseDatabase = FirebaseDatabase.getInstance().getReference();
         }
-        EditText editText = (EditText) startdialog.findViewById(R.id.session_edit_Text);
+        EditText editText = (EditText) startDialog.findViewById(R.id.session_edit_Text);
         String user = editText.getText().toString();
         sessionId = mfirebaseDatabase.push().getKey();
 
@@ -332,7 +390,7 @@ public class MainActivity extends AppCompatActivity implements
         session.setUser(user);
         com.example.hao.myeta.Location location = new com.example.hao.myeta.Location();
 
-        if (currentUserLocation != null){
+        if (currentUserLocation != null) {
           location.setLatitude(currentUserLocation.getLatitude());
           location.setLongitude(currentUserLocation.getLongitude());
         }
@@ -342,12 +400,12 @@ public class MainActivity extends AppCompatActivity implements
             .child(sessionId)
             .setValue(session);
 
-        prefs.edit().putString(databaseid, sessionId).apply();
-        prefs.edit().putBoolean(isSessionStarted, true).apply();
-        prefs.edit().putString(username, user).apply();
-        prefs.edit().putLong(destinationLat,
+        prefs.edit().putString(DATABASE_ID, sessionId).apply();
+        prefs.edit().putBoolean(IS_SESSION_STARTED, true).apply();
+        prefs.edit().putString(USERNAME, user).apply();
+        prefs.edit().putLong(DESTINATION_LATITUDE,
             Double.doubleToRawLongBits(endLocation.getLocation().getLatitude())).apply();
-        prefs.edit().putLong(destinationLong,
+        prefs.edit().putLong(DESTINATION_LONGITUDE,
             Double.doubleToRawLongBits(endLocation.getLocation().getLongitude())).apply();
 
 
@@ -363,9 +421,9 @@ public class MainActivity extends AppCompatActivity implements
         locationAlarmManager.scheduleAlarm(getApplication(), sessionId, sessionId);
 
         bindAdapterToRecycler(listOfSession);
-        imageButton.setVisibility(View.VISIBLE);
-        if (autocompleteFragment != null){
-          linear.setVisibility(View.GONE);
+        shareImageButton.setVisibility(View.VISIBLE);
+        if (autocompleteFragment != null) {
+          placesLinearLayout.setVisibility(View.GONE);
         }
         dialog.dismiss();
         hideFloatingActionButton();
@@ -373,7 +431,8 @@ public class MainActivity extends AppCompatActivity implements
     });
   }
 
-  private void addStartDestinationSteps(Location currentUserLocation, com.example.hao.myeta.Location location) {
+  private void addStartDestinationSteps(Location currentUserLocation,
+                                        com.example.hao.myeta.Location location) {
     GoogleDirection.withServerKey("AIzaSyDaMLLRbHXqa1UB7U_dLXYnr6DuvTvaQYk")
         .from(new LatLng(currentUserLocation.getLatitude(), currentUserLocation.getLongitude()))
         .to(new LatLng(location.getLatitude(), location.getLongitude()))
@@ -381,7 +440,7 @@ public class MainActivity extends AppCompatActivity implements
         .execute(new DirectionCallback() {
           @Override
           public void onDirectionSuccess(Direction direction, String rawBody) {
-            if(direction.isOK()) {
+            if (direction.isOK()) {
               Map<String, Object> childUpdates = new HashMap<>();
 
               //Firebase needs a custom object with empty constructor
@@ -393,9 +452,10 @@ public class MainActivity extends AppCompatActivity implements
               String startAddress = directionLeg.getStartAddress().toString();
               ArrayList<LatLng> originalDirections = directionLeg.getDirectionPoint();
               int directionSize = directionLeg.getDirectionPoint().size();
-              if ( directionSize > 0){
-                for (LatLng L : originalDirections){
-                  customDirectionList.add(new CustomLatLng(L.latitude, L.longitude));
+
+              if (directionSize > 0) {
+                for (LatLng latlong : originalDirections) {
+                  customDirectionList.add(new CustomLatLng(latlong.latitude, latlong.longitude));
                 }
               }
               tripInfo.setCustomDirectionList(customDirectionList);
@@ -406,12 +466,13 @@ public class MainActivity extends AppCompatActivity implements
 
               //if User clicked join session initially
               if (isFirstJoin) {
-                String tempSessionId = prefs.getString(joinedUserSecondaryId, getString(R.string.nullValue));
-                String parentSessionId = prefs.getString(databaseid, null);
+                String tempSessionId = prefs.getString(JOINED_USER_SECONDARY_ID,
+                    getString(R.string.nullValue));
+                String parentSessionId = prefs.getString(DATABASE_ID, null);
                 mfirebaseDatabase.child(getString(R.string.session) + parentSessionId)
                     .child(tempSessionId).updateChildren(childUpdates);
                 isFirstJoin = false;
-              }else {
+              } else {
                 mfirebaseDatabase.child(getString(R.string.session) + sessionId)
                     .child(sessionId).updateChildren(childUpdates);
               }
@@ -420,7 +481,7 @@ public class MainActivity extends AppCompatActivity implements
           }
 
           @Override
-          public void onDirectionFailure(Throwable t) {
+          public void onDirectionFailure(Throwable throwable) {
           }
         });
   }
@@ -428,80 +489,85 @@ public class MainActivity extends AppCompatActivity implements
   private void dialogEndSessionListener(final Dialog enddialog, Button confirmdialogButton) {
     confirmdialogButton.setOnClickListener(new View.OnClickListener() {
       @Override
-      public void onClick(View v) {
-        if (queryListener != null){
-          mfirebaseDatabase.removeEventListener(queryListener);
-        }
-        String tempSessionId = prefs.getString(joinedUserSecondaryId, getString(R.string.nullValue));
-        String parentSessionId = prefs.getString(databaseid, null);
-        startSession.setVisibility(View.VISIBLE);
-        joinSession.setVisibility(View.VISIBLE);
-        endSession.setVisibility(View.GONE);
-        locationAlarmManager.cancelAlarm(getApplication());
-
-        setUpLocationCallback();
-        if (!tempSessionId.equals(getString(R.string.nullValue)) && parentSessionId != null){
-          mfirebaseDatabase.child(getString(R.string.session) + parentSessionId)
-              .child(tempSessionId).removeValue();
-        } else{
-          if (parentSessionId != null){
-            mfirebaseDatabase.child(getString(R.string.session) + parentSessionId)
-                .child(parentSessionId).removeValue();
-          }
-        }
-        prefs.edit().clear().apply();
-        listOfSession.clear();
-        if (sessionadapter != null){
-          sessionadapter.notifyDataSetChanged();
-        }
-        rvlinear.setVisibility(View.GONE);
-        listOfMarkers.clear();
-        googleMap.clear();
-        linear.setVisibility(View.VISIBLE);
-        imageButton.setVisibility(View.GONE);
+      public void onClick(View view) {
+        clearAllSettings();
         enddialog.dismiss();
       }
     });
   }
 
+  private void clearAllSettings() {
+    if (queryListener != null) {
+      mfirebaseDatabase.removeEventListener(queryListener);
+    }
+
+    startSessionButton.setVisibility(View.VISIBLE);
+    joinSessionButton.setVisibility(View.VISIBLE);
+    endSessionButton.setVisibility(View.GONE);
+    locationAlarmManager.cancelAlarm(getApplication());
+    String tempSessionId = prefs.getString(JOINED_USER_SECONDARY_ID, getString(R.string.nullValue));
+    String parentSessionId = prefs.getString(DATABASE_ID, null);
+
+    setUpLocationCallback();
+    if (!tempSessionId.equals(getString(R.string.nullValue)) && parentSessionId != null) {
+      mfirebaseDatabase.child(getString(R.string.session) + parentSessionId)
+          .child(tempSessionId).removeValue();
+    } else {
+      if (parentSessionId != null) {
+        mfirebaseDatabase.child(getString(R.string.session) + parentSessionId)
+            .child(parentSessionId).removeValue();
+      }
+    }
+    prefs.edit().clear().apply();
+    listOfSession.clear();
+    if (sessionadapter != null) {
+      sessionadapter.notifyDataSetChanged();
+    }
+    recyclerViewLinearLayout.setVisibility(View.GONE);
+    listOfMarkers.clear();
+    googleMap.clear();
+    placesLinearLayout.setVisibility(View.VISIBLE);
+    shareImageButton.setVisibility(View.GONE);
+  }
+
   private void dialogJoinSessionListener(final Dialog dialog, Button dialogButton) {
     dialogButton.setOnClickListener(new View.OnClickListener() {
       @Override
-      public void onClick(View v) {
+      public void onClick(View view) {
         mfirebaseDatabase = FirebaseDatabase.getInstance().getReference();
         String newSessionId = ((EditText)
-            joindialog.findViewById(R.id.join_sessionID_editText)).getText().toString();
+            joinDialog.findViewById(R.id.join_sessionID_editText)).getText().toString();
         String newSessionName = ((EditText)
-            joindialog.findViewById(R.id.join_sessionUserName_editText)).getText().toString();
+            joinDialog.findViewById(R.id.join_sessionUserName_editText)).getText().toString();
 
-        prefs.edit().putString(databaseid, newSessionId).apply();
-        prefs.edit().putString(username, newSessionName).apply();
+        prefs.edit().putString(DATABASE_ID, newSessionId).apply();
+        prefs.edit().putString(USERNAME, newSessionName).apply();
         isFirstJoin = true;
 
         Session newSession = new Session();
         newSession.setUser(newSessionName);
         com.example.hao.myeta.Location location = new com.example.hao.myeta.Location();
 
-        if (currentUserLocation != null){
+        if (currentUserLocation != null) {
           location.setLatitude(currentUserLocation.getLatitude());
           location.setLongitude(currentUserLocation.getLongitude());
         }
         newSession.setLocation(location);
 
         String newUserKey = mfirebaseDatabase.push().getKey();
-        mfirebaseDatabase.child(getString(R.string.session) +
-            newSessionId).child(newUserKey).setValue(newSession);
+        mfirebaseDatabase.child(getString(R.string.session)
+            + newSessionId).child(newUserKey).setValue(newSession);
 
-        prefs.edit().putString(joinedUserSecondaryId, newUserKey).apply();
+        prefs.edit().putString(JOINED_USER_SECONDARY_ID, newUserKey).apply();
         setUpQuerycallBacks();
 
-        prefs.edit().putBoolean(isSessionStarted, true).apply();
+        prefs.edit().putBoolean(IS_SESSION_STARTED, true).apply();
         locationAlarmManager.scheduleAlarm(getApplication(), newSessionId, newUserKey);
 
         bindAdapterToRecycler(listOfSession);
-        imageButton.setVisibility(View.VISIBLE);
-        if (autocompleteFragment != null){
-          linear.setVisibility(View.GONE);
+        shareImageButton.setVisibility(View.VISIBLE);
+        if (autocompleteFragment != null) {
+          placesLinearLayout.setVisibility(View.GONE);
         }
         hideFloatingActionButton();
         dialog.dismiss();
@@ -510,47 +576,50 @@ public class MainActivity extends AppCompatActivity implements
   }
 
   private void hideFloatingActionButton() {
-    startSession.setVisibility(View.GONE);
-    joinSession.setVisibility(View.GONE);
-    endSession.setVisibility(View.VISIBLE);
+    startSessionButton.setVisibility(View.GONE);
+    joinSessionButton.setVisibility(View.GONE);
+    endSessionButton.setVisibility(View.VISIBLE);
   }
 
   private void setUpQuerycallBacks() {
-    String storedSessionId = prefs.getString(databaseid, getString(R.string.nullValue));
-    if (storedSessionId.equals(getString(R.string.nullValue))){
+    String storedSessionId = prefs.getString(DATABASE_ID, getString(R.string.nullValue));
+    final String currentUser = prefs.getString(USERNAME, null);
+    if (storedSessionId.equals(getString(R.string.nullValue))) {
       return;
     }
-    if(mfirebaseDatabase == null){
+    if (mfirebaseDatabase == null) {
       mfirebaseDatabase = FirebaseDatabase.getInstance().getReference();
     }
-    Query matchingSession = mfirebaseDatabase.child(getString(R.string.session) +
-        storedSessionId);
+    Query matchingSession = mfirebaseDatabase.child(getString(R.string.session)
+        + storedSessionId);
 
     queryListener = new ValueEventListener() {
       @Override
       public void onDataChange(DataSnapshot dataSnapshot) {
-        Boolean isPreviouslyStoredSession = prefs.getBoolean(isSessionStarted, false);
-        if (!isPreviouslyStoredSession){
+        Boolean isPreviouslyStoredSession = prefs.getBoolean(IS_SESSION_STARTED, false);
+        if (!isPreviouslyStoredSession) {
           return;
         }
-        Iterable<DataSnapshot>  allUsers = dataSnapshot.getChildren();
-        Iterator userIterator = allUsers.iterator();
         googleMap.clear();
         listOfMarkers.clear();
         listOfSession.clear();
+        Iterable<DataSnapshot>  allUsers = dataSnapshot.getChildren();
+        Iterator userIterator = allUsers.iterator();
 
-        while(userIterator.hasNext()){
+        while (userIterator.hasNext()) {
           DataSnapshot user = (DataSnapshot) userIterator.next();
           Session savedSession =  user.getValue(Session.class);
-          if (!savedSession.getUser().equals("Destination")){
+          if (!savedSession.getUser().equals("Destination")) {
             listOfSession.add(savedSession);
           }
-          MapsUtil.createMarkers(googleMap, listOfMarkers, savedSession);
+
+          MapsUtil.createMarkers(googleMap, listOfMarkers, savedSession,
+              currentUser.equals(savedSession.getUser()) ? true : false);
           getDirections(savedSession);
-          if (isFirstJoin && savedSession.getUser().equals("Destination")){
-            prefs.edit().putLong(destinationLat,
+          if (isFirstJoin && savedSession.getUser().equals("Destination")) {
+            prefs.edit().putLong(DESTINATION_LATITUDE,
                 Double.doubleToRawLongBits(savedSession.getLocation().getLatitude())).apply();
-            prefs.edit().putLong(destinationLong,
+            prefs.edit().putLong(DESTINATION_LONGITUDE,
                 Double.doubleToRawLongBits(savedSession.getLocation().getLongitude())).apply();
 
             //if the first call when joined : the user has no idea about destination.
@@ -560,16 +629,17 @@ public class MainActivity extends AppCompatActivity implements
                     savedSession.getLocation().getLongitude()));
           }
         }
-        if(listOfMarkers.size() > 1){
+        if (listOfMarkers.size() > 1) {
           MapsUtil.correctZoom(googleMap, listOfMarkers);
         }
-        if (sessionadapter != null){
+        if (sessionadapter != null) {
           sessionadapter.notifyDataSetChanged();
         }
-        if (isPreviouslyStoredSession && listOfSession.size() > 0){
+        if (isPreviouslyStoredSession && listOfSession.size() > 0) {
           bindAdapterToRecycler(listOfSession);
         }
       }
+
       @Override
       public void onCancelled(DatabaseError databaseError) {
       }
@@ -579,15 +649,20 @@ public class MainActivity extends AppCompatActivity implements
 
   private void getDirections(Session savedSession) {
     TripInfo tripInfo = savedSession.getTripInfo();
-    if (tripInfo == null){
+    if (tripInfo == null) {
       return;
     }
     ArrayList<CustomLatLng> steplist = tripInfo.getCustomDirectionList();
-    if (steplist != null && !steplist.isEmpty()){
+    if (steplist != null && !steplist.isEmpty()) {
+      final boolean useRandomColor = prefs.getBoolean(IS_RANDOM_COLOR_ENABLED, true);
       PolylineOptions directionOptions = new PolylineOptions();
-      directionOptions.color(Color.RED);
-      directionOptions.width(10);
-      for (CustomLatLng step : steplist){
+      if (useRandomColor) {
+        directionOptions.color(ColorUtil.generateRandomColor());
+      } else {
+        directionOptions.color(Color.RED);
+      }
+      directionOptions.width(15);
+      for (CustomLatLng step : steplist) {
         directionOptions.add(new LatLng(step.getLat(), step.getLong()));
       }
       googleMap.addPolyline(directionOptions);
@@ -596,63 +671,59 @@ public class MainActivity extends AppCompatActivity implements
 
   @OnClick(R.id.shareButton)
   void shareSessionId() {
-    String shareableSessionId = prefs.getString(databaseid, getString(R.string.nullValue));
-    Intent sendIntent = new Intent();
-    sendIntent.setAction(Intent.ACTION_SEND);
-    sendIntent.setType("text/plain");
-    sendIntent.putExtra(Intent.EXTRA_TEXT, String.format(getString(R.string.share_session), shareableSessionId));
-    startActivity(sendIntent);
+    createShareSessionIntent(MainActivity.this, prefs);
   }
+
 
   @OnClick(R.id.fab_start_session)
   void clickStartSession() {
     floatingActionMenu.close(true);
-    startdialog = new Dialog(this);
-    if (endLocation == null){
-      startdialog.setContentView(R.layout.non_selected_location_dialog);
-      Button dialogButton = (Button) startdialog.findViewById(R.id.non_selected_location_button);
+    startDialog = new Dialog(this);
+    if (endLocation == null) {
+      startDialog.setContentView(R.layout.non_selected_location_dialog);
+      Button dialogButton = (Button) startDialog.findViewById(R.id.non_selected_location_button);
       dialogButton.setOnClickListener(new View.OnClickListener() {
         @Override
-        public void onClick(View v) {
-          startdialog.dismiss();
+        public void onClick(View view) {
+          startDialog.dismiss();
         }
       });
-      startdialog.show();
+      startDialog.show();
       return;
     }
-    startdialog.setContentView(R.layout.start_dialog);
-    dialogManager.expandWindow(startdialog);
-    Button dialogButton = (Button) startdialog.findViewById(R.id.start_dialog_confirm_button);
-    dialogStartSessionListener(startdialog, dialogButton);
-    startdialog.show();
+    startDialog.setContentView(R.layout.start_dialog);
+    dialogManager.expandWindow(startDialog);
+    Button dialogButton = (Button) startDialog.findViewById(R.id.start_dialog_confirm_button);
+    dialogStartSessionListener(startDialog, dialogButton);
+    startDialog.show();
   }
 
   @OnClick(R.id.fab_join_session)
   void clickJoinSession() {
     floatingActionMenu.close(true);
-    joindialog = new Dialog(this);
-    joindialog.setContentView(R.layout.join_dialog);
-    dialogManager.expandWindow(joindialog);
-    Button dialogButton = (Button) joindialog.findViewById(R.id.join_dialog_confirm_button);
-    dialogJoinSessionListener(joindialog, dialogButton);
-    joindialog.show();
+    joinDialog = new Dialog(this);
+    joinDialog.setContentView(R.layout.join_dialog);
+    dialogManager.expandWindow(joinDialog);
+    Button dialogButton = (Button) joinDialog.findViewById(R.id.join_dialog_confirm_button);
+    dialogJoinSessionListener(joinDialog, dialogButton);
+    joinDialog.show();
   }
 
   @OnClick(R.id.fab_end_session)
   void clickEndSession() {
     floatingActionMenu.close(true);
-    enddialog = new Dialog(this);
-    enddialog.setContentView(R.layout.end_dialog);
-    dialogManager.expandWindow(enddialog);
-    Button confirmdialogButton = (Button) enddialog.findViewById(R.id.end_dialog_confirm_button);
-    dialogEndSessionListener(enddialog, confirmdialogButton);
-    Button canceldialogButton = (Button) enddialog.findViewById(R.id.end_dialog_cancel_button);
+    endDialog = new Dialog(this);
+    endDialog.setContentView(R.layout.end_dialog);
+    dialogManager.expandWindow(endDialog);
+    Button confirmdialogButton = (Button) endDialog.findViewById(R.id.end_dialog_confirm_button);
+    dialogEndSessionListener(endDialog, confirmdialogButton);
+    Button canceldialogButton = (Button) endDialog.findViewById(R.id.end_dialog_cancel_button);
     canceldialogButton.setOnClickListener(new View.OnClickListener() {
       @Override
-      public void onClick(View v) {
-        enddialog.dismiss();
+      public void onClick(View view) {
+        endDialog.dismiss();
       }
     });
-    enddialog.show();
+    endDialog.show();
   }
 }

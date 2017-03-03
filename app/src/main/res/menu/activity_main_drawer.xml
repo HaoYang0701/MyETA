@@ -9,12 +9,6 @@
             android:id="@+id/nav_update"
             android:icon="@drawable/ic_update_black_18dp"
             android:title="Map update interval"/>
-
-        <item
-            android:id="@+id/nav_turn_off"
-            android:icon="@drawable/ic_location_off_black_18dp"
-            android:title="Auto turn off time"/>
-
         <item
             android:id="@+id/nav_color"
             android:icon="@drawable/ic_color_lens_black_18dp"

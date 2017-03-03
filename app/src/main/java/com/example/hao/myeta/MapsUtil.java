@@ -3,6 +3,7 @@ package com.example.hao.myeta;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -25,10 +26,19 @@ public class MapsUtil {
     googleMap.moveCamera(CameraUpdateFactory.zoomOut());
   }
 
- public static void createMarkers(GoogleMap googleMap, ArrayList<Marker> listOfMarkers, Session savedSession) {
+  public static void createMarkers(GoogleMap googleMap, ArrayList<Marker> listOfMarkers,
+                                  Session savedSession, boolean iscurrentUser) {
     final LatLng currentLocation = new LatLng(savedSession.getLocation().getLatitude(),
         savedSession.getLocation().getLongitude());
-    Marker newMarker = googleMap.addMarker(new MarkerOptions().position(currentLocation));
+    Marker newMarker;
+    if (iscurrentUser) {
+      newMarker = googleMap.addMarker(new MarkerOptions()
+          .position(currentLocation)
+          .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)).title("Current Location"));
+      newMarker.showInfoWindow();
+    } else {
+      newMarker = googleMap.addMarker(new MarkerOptions().position(currentLocation));
+    }
     listOfMarkers.add(newMarker);
   }
 }

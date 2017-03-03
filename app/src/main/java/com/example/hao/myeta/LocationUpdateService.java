@@ -24,9 +24,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.example.hao.myeta.MainActivity.destinationLat;
-import static com.example.hao.myeta.MainActivity.destinationLong;
-import static com.example.hao.myeta.MainActivity.username;
+import static com.example.hao.myeta.MainActivity.DESTINATION_LATITUDE;
+import static com.example.hao.myeta.MainActivity.DESTINATION_LONGITUDE;
+import static com.example.hao.myeta.MainActivity.USERNAME;
 
 public class LocationUpdateService extends Service {
   private volatile HandlerThread mHandlerThread;
@@ -74,7 +74,7 @@ public class LocationUpdateService extends Service {
           @Override
           public void gotLocation(android.location.Location location) {
             final Session session = new Session();
-            String tempusername = prefs.getString(username, null);
+            String tempusername = prefs.getString(USERNAME, null);
             if (tempusername == null){
               return;
             }
@@ -89,9 +89,9 @@ public class LocationUpdateService extends Service {
                 .setValue(session);
 
             double endLat = Double.longBitsToDouble(
-                prefs.getLong(destinationLat, Double.doubleToLongBits(0)));
+                prefs.getLong(DESTINATION_LATITUDE, Double.doubleToLongBits(0)));
             double endLong = Double.longBitsToDouble(
-                prefs.getLong(destinationLong, Double.doubleToLongBits(0)));
+                prefs.getLong(DESTINATION_LONGITUDE, Double.doubleToLongBits(0)));
 
             GoogleDirection.withServerKey("AIzaSyDaMLLRbHXqa1UB7U_dLXYnr6DuvTvaQYk")
                 .from(new LatLng(location.getLatitude(), location.getLongitude()))
