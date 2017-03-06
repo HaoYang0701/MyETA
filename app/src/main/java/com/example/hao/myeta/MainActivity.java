@@ -27,6 +27,8 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Switch;
+import android.widget.Toast;
+
 import com.akexorcist.googledirection.DirectionCallback;
 import com.akexorcist.googledirection.GoogleDirection;
 import com.akexorcist.googledirection.constant.AvoidType;
@@ -79,13 +81,11 @@ public class MainActivity extends AppCompatActivity implements
 
   private ArrayList<Marker> listOfMarkers;
   private ArrayList<Session> listOfSession;
-
   private Dialog startDialog;
   private Dialog joinDialog;
   private Dialog endDialog;
   private Dialog mapUpdateDialog;
   private Dialog randomColorDialog;
-
   private Marker currentMarker;
   private LatLng currentLocation;
   private Location currentUserLocation;
@@ -96,7 +96,6 @@ public class MainActivity extends AppCompatActivity implements
   private PlaceAutocompleteFragment autocompleteFragment;
   private static SessionAdapter sessionadapter;
   private String sessionId;
-
   private static GoogleMap googleMap;
   private static SharedPreferences prefs;
   private static DialogManager dialogManager;
@@ -107,7 +106,6 @@ public class MainActivity extends AppCompatActivity implements
   private static String IS_RANDOM_COLOR_ENABLED = "IS_RANDOM_COLOR_ENABLED";
   private static String JOINED_USER_SECONDARY_ID = "JOINED_USER_SECONDARY_ID";
   private static String IS_SESSION_STARTED = "IS_SESSION_STARTED";
-
   public static String USERNAME = "USERNAME";
   public static String DESTINATION_LATITUDE = "DESTINATION_LATITUDE";
   public static String DESTINATION_LONGITUDE = "DESTINATION_LONGITUDE";
@@ -227,6 +225,8 @@ public class MainActivity extends AppCompatActivity implements
       setupUpdateTimeDialog();
     } else if (id == R.id.nav_color) {
       setupRandomColorDialog();
+    } else if (id == R.id.nav_permissions) {
+      PermissionUtil.checkLocationPermissions(this);
     } else if (id == R.id.nav_share) {
       createShareSessionIntent(MainActivity.this, prefs);
     } else if (id == R.id.nav_playstore) {
@@ -264,6 +264,7 @@ public class MainActivity extends AppCompatActivity implements
     mapUpdateDialog.setContentView(R.layout.update_time_dialog);
     dialogManager.expandWindow(mapUpdateDialog);
     mapUpdateDialog.show();
+
     Button confirmdialogButton = (Button) mapUpdateDialog.findViewById(R.id.time_update_confirm);
     updateTimeListener(mapUpdateDialog, confirmdialogButton);
     Button canceldialogButton = (Button) mapUpdateDialog.findViewById(R.id.time_update_cancel);
@@ -295,6 +296,10 @@ public class MainActivity extends AppCompatActivity implements
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
           setUpLocationCallback();
         } else {
+            CharSequence text = getString(R.string.please_enable_permissions);
+            int duration = Toast.LENGTH_LONG;
+            Toast toast = Toast.makeText(this, text, duration);
+            toast.show();
         }
         return;
       }
@@ -315,7 +320,7 @@ public class MainActivity extends AppCompatActivity implements
         }
         MarkerOptions markerOptions = new MarkerOptions()
             .position(currentLocation)
-            .title("Current Location");
+            .title(getString(R.string.current_location));
         currentMarker = googleMap.addMarker(markerOptions);
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15));
       }
@@ -356,7 +361,7 @@ public class MainActivity extends AppCompatActivity implements
           if (mfirebaseDatabase == null) {
             mfirebaseDatabase = FirebaseDatabase.getInstance().getReference();
           }
-          String user = "Destination";
+          String user = getString(R.string.Destination);
           endLocation = new Session();
           endLocation.setUser(user);
 
@@ -378,6 +383,11 @@ public class MainActivity extends AppCompatActivity implements
     dialogButton.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
+        if (!PermissionUtil.isLocationPermissionsOn(MainActivity.this)){
+          denyStartSessionToast();
+          dialog.dismiss();
+          return;
+        }
         if (mfirebaseDatabase == null) {
           mfirebaseDatabase = FirebaseDatabase.getInstance().getReference();
         }
@@ -431,8 +441,22 @@ public class MainActivity extends AppCompatActivity implements
     });
   }
 
+  private void denyStartSessionToast() {
+    CharSequence text = getString(R.string.you_cannot_share);
+    int duration = Toast.LENGTH_LONG;
+    Toast toast = Toast.makeText(MainActivity.this, text, duration);
+    toast.show();
+  }
+
   private void addStartDestinationSteps(Location currentUserLocation,
                                         com.example.hao.myeta.Location location) {
+    if (location == null || currentUserLocation == null){
+      CharSequence text = getString(R.string.please_check_connection);
+      int duration = Toast.LENGTH_LONG;
+      Toast toast = Toast.makeText(MainActivity.this, text, duration);
+      toast.show();
+      return;
+    }
     GoogleDirection.withServerKey("AIzaSyDaMLLRbHXqa1UB7U_dLXYnr6DuvTvaQYk")
         .from(new LatLng(currentUserLocation.getLatitude(), currentUserLocation.getLongitude()))
         .to(new LatLng(location.getLatitude(), location.getLongitude()))
@@ -440,6 +464,7 @@ public class MainActivity extends AppCompatActivity implements
         .execute(new DirectionCallback() {
           @Override
           public void onDirectionSuccess(Direction direction, String rawBody) {
+            String status = direction.getStatus();
             if (direction.isOK()) {
               Map<String, Object> childUpdates = new HashMap<>();
 
@@ -482,6 +507,10 @@ public class MainActivity extends AppCompatActivity implements
 
           @Override
           public void onDirectionFailure(Throwable throwable) {
+            CharSequence text = getString(R.string.please_check_connection);
+            int duration = Toast.LENGTH_LONG;
+            Toast toast = Toast.makeText(MainActivity.this, text, duration);
+            toast.show();
           }
         });
   }
@@ -491,6 +520,7 @@ public class MainActivity extends AppCompatActivity implements
       @Override
       public void onClick(View view) {
         clearAllSettings();
+        autocompleteFragment.setHint(getString(R.string.Destination));
         enddialog.dismiss();
       }
     });
@@ -534,6 +564,11 @@ public class MainActivity extends AppCompatActivity implements
     dialogButton.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
+        if (!PermissionUtil.isLocationPermissionsOn(MainActivity.this)){
+          denyStartSessionToast();
+          dialog.dismiss();
+          return;
+        }
         mfirebaseDatabase = FirebaseDatabase.getInstance().getReference();
         String newSessionId = ((EditText)
             joinDialog.findViewById(R.id.join_sessionID_editText)).getText().toString();
@@ -609,14 +644,14 @@ public class MainActivity extends AppCompatActivity implements
         while (userIterator.hasNext()) {
           DataSnapshot user = (DataSnapshot) userIterator.next();
           Session savedSession =  user.getValue(Session.class);
-          if (!savedSession.getUser().equals("Destination")) {
+          if (!savedSession.getUser().equals(getString(R.string.Destination))) {
             listOfSession.add(savedSession);
           }
 
           MapsUtil.createMarkers(googleMap, listOfMarkers, savedSession,
               currentUser.equals(savedSession.getUser()) ? true : false);
           getDirections(savedSession);
-          if (isFirstJoin && savedSession.getUser().equals("Destination")) {
+          if (isFirstJoin && savedSession.getUser().equals(getString(R.string.Destination))) {
             prefs.edit().putLong(DESTINATION_LATITUDE,
                 Double.doubleToRawLongBits(savedSession.getLocation().getLatitude())).apply();
             prefs.edit().putLong(DESTINATION_LONGITUDE,

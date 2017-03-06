@@ -3,27 +3,35 @@ package com.example.hao.myeta;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.widget.Toast;
 
 import static com.example.hao.myeta.MainActivity.DATABASE_ID;
 
 public class ShareUtils {
+  public static String intentType = "text/plain";
 
   public static void createShareSessionIntent(Context context, SharedPreferences prefs) {
     String shareableSessionId = prefs.getString(DATABASE_ID, context.getString(R.string.nullValue));
+    if (shareableSessionId.equals(context.getString(R.string.nullValue))){
+      CharSequence text = context.getString(R.string.you_cannot_share);
+      int duration = Toast.LENGTH_LONG;
+      Toast toast = Toast.makeText(context, text, duration);
+      toast.show();
+      return;
+    }
     Intent sendIntent = new Intent();
-    sendIntent.setType("text/plain");
+    sendIntent.setType(intentType);
     sendIntent.setAction(Intent.ACTION_SEND);
-    sendIntent.putExtra(Intent.EXTRA_TEXT, String.format(context.getString(R.string.share_session), shareableSessionId));
+    sendIntent.putExtra(Intent.EXTRA_TEXT,
+        String.format(context.getString(R.string.share_session), shareableSessionId));
     context.startActivity(sendIntent);
   }
 
   public static void createPlaystoreIntent(Context context) {
     Intent i = new Intent(Intent.ACTION_SEND);
-    i.setType("text/plain");
-    i.putExtra(Intent.EXTRA_SUBJECT, "My application name");
-    String sAux = "\nLet me recommend you this application\n\n";
-    sAux = sAux + "https://play.google.com/store/apps/details?id=Orion.Soft \n\n";
-    i.putExtra(Intent.EXTRA_TEXT, sAux);
+    i.setType(intentType);
+    i.putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.my_application_name));
+    i.putExtra(Intent.EXTRA_TEXT, context.getString(R.string.share_session_playstore));
     context.startActivity(i);
   }
 }

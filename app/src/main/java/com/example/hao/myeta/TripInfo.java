@@ -11,7 +11,6 @@ public class TripInfo implements Parcelable {
   String duration;String startAddress;
 
   public TripInfo(){
-
   }
 
   public String getStartAddress() {

@@ -20,7 +20,7 @@ public class MapsUtil {
       builder.include(marker.getPosition());
     }
     LatLngBounds bounds = builder.build();
-    int padding = 0; // offset from edges of the map in pixels
+    int padding = 0;
     CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
     googleMap.moveCamera(cu);
     googleMap.moveCamera(CameraUpdateFactory.zoomOut());

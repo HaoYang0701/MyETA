@@ -13,16 +13,17 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class LocationUtils {
+  //Taken from
+  //http://stackoverflow.com/questions/3145089/what-is-the-simplest-and-most-robust-way-to-get-the-users-current-location-on-a
   private static final String EXCEPTIONLOG = "EXCEPTIONLOG";
-  Context context;
-  Timer locationTimer;
-  LocationManager locationManager;
-  LocationResult locationResult;
-  boolean isGpsEnabled = false;
-  boolean isNetworkEnabled = false;
+  private Context context;
+  private Timer locationTimer;
+  private LocationManager locationManager;
+  private LocationResult locationResult;
+  private boolean isGpsEnabled = false;
+  private boolean isNetworkEnabled = false;
 
   public boolean getLocation(Context context, LocationResult result) {
-    //I use LocationResult callback class to pass location value from MyLocation to user code.
     this.context = context;
     locationResult = result;
 
@@ -30,7 +31,6 @@ public class LocationUtils {
       locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
     }
 
-    //exceptions will be thrown if provider is not permitted.
     try {
       isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
     } catch (Exception ex) {
@@ -42,7 +42,6 @@ public class LocationUtils {
       Log.d(EXCEPTIONLOG, ex.getMessage());
     }
 
-    //don't start listeners if no provider is enabled
     if (!isGpsEnabled && !isNetworkEnabled) {
       return false;
     }
@@ -129,7 +128,6 @@ public class LocationUtils {
       if (isNetworkEnabled) {
         networkLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
       }
-      //if there are both values use the latest one
       if (gpsLocation != null && networkLocation != null) {
         if (gpsLocation.getTime() > networkLocation.getTime()) {
           locationResult.gotLocation(gpsLocation);

@@ -10,15 +10,15 @@ import android.widget.TextView;
 import java.util.List;
 
 public class SessionAdapter extends RecyclerView.Adapter {
-  Context context;
-  List<Session> sessionList;
-  RecyclerView.ViewHolder tempviewHolder;
+  private Context context;
+  private List<Session> sessionList;
+  private RecyclerView.ViewHolder tempviewHolder;
 
-  public static class SessionViewHolder extends RecyclerView.ViewHolder {
-    public TextView nameTextview;
-    public TextView locationTextview;
-    public TextView durationTextview;
-    public TextView distanceTextview;
+  private static class SessionViewHolder extends RecyclerView.ViewHolder {
+    private TextView nameTextview;
+    private TextView locationTextview;
+    private TextView durationTextview;
+    private TextView distanceTextview;
 
     public SessionViewHolder(View itemView) {
       super(itemView);
@@ -53,11 +53,14 @@ public class SessionAdapter extends RecyclerView.Adapter {
     sessionUser.setText(session.getUser());
     if (tripInfo != null){
       TextView sessionLocation = ((SessionViewHolder)tempviewHolder).locationTextview;
-      sessionLocation.setText(context.getString(R.string.trip_start_location) + tripInfo.getStartAddress());
+      sessionLocation.setText(
+          context.getString(R.string.trip_start_location) + tripInfo.getStartAddress());
       TextView sessionDuration = ((SessionViewHolder)tempviewHolder).durationTextview;
-      sessionDuration.setText(context.getString(R.string.trip_duration) + tripInfo.getDuration());
+      sessionDuration.setText(
+          context.getString(R.string.trip_duration) + tripInfo.getDuration());
       TextView sessionDistance = ((SessionViewHolder)tempviewHolder).distanceTextview;
-      sessionDistance.setText(context.getString(R.string.trip_distance) + tripInfo.getDistance());
+      sessionDistance.setText(
+          context.getString(R.string.trip_distance) + tripInfo.getDistance());
     }
   }
 

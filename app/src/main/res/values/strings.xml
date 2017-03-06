@@ -1,6 +1,12 @@
 <resources>
     <string name="app_name">MyEta</string>
-
+    <string name="my_eta_com">com.example.hao.myeta</string>
+    <string name="my_application_name">my application name</string>
+    <string name="you_cannot_share">You can not share a session before you start one</string>
+    <string name="please_enable_permissions">Please enabled location permissions, or else MyEta may not work properly</string>
+    <string name="location_already_enabled">Location permission is already enabled</string>
+    <string name="session_cannot_be_start">A session can not be started without your location</string>
+    <string name="please_check_connection">Please check that your data connection is on</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="start_session">Start Session</string>
@@ -23,4 +29,6 @@
     <string name="trip_start_location">Location :&#160;</string>
     <string name="trip_duration">Trip Duration :&#160;</string>
     <string name="trip_distance">Trip Distance :&#160;</string>
+    <string name="current_location">Current Location</string>
+    <string name="Destination">Destination</string>
 </resources>

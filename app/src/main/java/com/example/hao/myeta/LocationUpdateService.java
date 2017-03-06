@@ -33,6 +33,8 @@ public class LocationUpdateService extends Service {
   private ServiceHandler mServiceHandler;
   private SharedPreferences prefs;
   private DatabaseReference mfirebaseDatabase;
+  private String tripInfoString = "/tripInfo/";
+  private String googleDirectionKey = "AIzaSyDaMLLRbHXqa1UB7U_dLXYnr6DuvTvaQYk";
 
   private final class ServiceHandler extends Handler {
     public ServiceHandler(Looper looper) {
@@ -48,7 +50,7 @@ public class LocationUpdateService extends Service {
   public void onCreate() {
     super.onCreate();
     prefs = this.getSharedPreferences(
-        "com.example.hao.myeta", Context.MODE_PRIVATE);
+        getString(R.string.my_eta_com), Context.MODE_PRIVATE);
     mHandlerThread = new HandlerThread("MyCustomService.HandlerThread");
     mHandlerThread.start();
     mServiceHandler = new ServiceHandler(mHandlerThread.getLooper());
@@ -62,6 +64,9 @@ public class LocationUpdateService extends Service {
 
   @Override
   public int onStartCommand(Intent intent, int flags, int startId) {
+    if (intent == null){
+      return START_STICKY;
+    }
     Bundle extras = intent.getExtras();
     final String recievedSessionString = extras.getString("IntentSessionID");
     final String recievedDatabaseBaseString = extras.getString("IntentdatabaseBaseId");
@@ -93,7 +98,7 @@ public class LocationUpdateService extends Service {
             double endLong = Double.longBitsToDouble(
                 prefs.getLong(DESTINATION_LONGITUDE, Double.doubleToLongBits(0)));
 
-            GoogleDirection.withServerKey("AIzaSyDaMLLRbHXqa1UB7U_dLXYnr6DuvTvaQYk")
+            GoogleDirection.withServerKey(googleDirectionKey)
                 .from(new LatLng(location.getLatitude(), location.getLongitude()))
                 .to(new LatLng(endLat, endLong))
                 .avoid(AvoidType.FERRIES)
@@ -121,7 +126,7 @@ public class LocationUpdateService extends Service {
                       tripInfo.setDuration(duration);
                       tripInfo.setStartAddress(startAddress);
                       session.setTripInfo(tripInfo);
-                      childUpdates.put("/tripInfo/", tripInfo);
+                      childUpdates.put(tripInfoString, tripInfo);
                       mfirebaseDatabase.child(getString(R.string.session) + recievedDatabaseBaseString)
                           .child(recievedSessionString).updateChildren(childUpdates);
 
