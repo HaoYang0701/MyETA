@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">MyEta</string>
-    <string name="my_eta_com">com.example.hao.myeta</string>
+    <string name="my_eta_com">com.myeta</string>
     <string name="my_application_name">my application name</string>
     <string name="you_cannot_share">You can not share a session before you start one</string>
     <string name="please_enable_permissions">Please enabled location permissions, or else MyEta may not work properly</string>

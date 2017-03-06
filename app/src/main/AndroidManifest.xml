@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.example.hao.myeta">
+          package="com.myeta">
 
     <!--
          The ACCESS_COARSE/FINE_LOCATION permissions are not required to use
@@ -18,7 +18,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".MainActivity"
+            android:name="com.myeta.MainActivity"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
@@ -29,13 +29,16 @@
             </intent-filter>
         </activity>
 
+        <activity android:name="com.myeta.MyEtaWelcome"
+                  android:theme="@style/WelcomeScreenTheme"/>
+
         <receiver
-            android:name=".LocationUpdateAlarmReciever"
+            android:name="com.myeta.LocationUpdateAlarmReciever"
             android:process=":remote" >
         </receiver>
 
         <service
-            android:name=".LocationUpdateService"
+            android:name="com.myeta.LocationUpdateService"
             android:exported="false"/>
 
         <meta-data

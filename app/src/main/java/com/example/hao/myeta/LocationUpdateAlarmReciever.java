@@ -1,4 +1,4 @@
-package com.example.hao.myeta;
+package com.myeta;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

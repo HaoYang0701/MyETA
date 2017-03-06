@@ -1,4 +1,4 @@
-package com.example.hao.myeta;
+package com.myeta;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;

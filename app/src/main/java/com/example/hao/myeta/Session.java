@@ -1,4 +1,4 @@
-package com.example.hao.myeta;
+package com.myeta;
 
 import android.os.Parcel;
 import android.os.Parcelable;

@@ -1,4 +1,4 @@
-package com.example.hao.myeta;
+package com.myeta;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -128,6 +128,7 @@ public class LocationUtils {
       if (isNetworkEnabled) {
         networkLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
       }
+
       if (gpsLocation != null && networkLocation != null) {
         if (gpsLocation.getTime() > networkLocation.getTime()) {
           locationResult.gotLocation(gpsLocation);

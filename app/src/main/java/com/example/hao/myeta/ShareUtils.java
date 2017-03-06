@@ -1,11 +1,11 @@
-package com.example.hao.myeta;
+package com.myeta;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.widget.Toast;
 
-import static com.example.hao.myeta.MainActivity.DATABASE_ID;
+import static com.myeta.MainActivity.DATABASE_ID;
 
 public class ShareUtils {
   public static String intentType = "text/plain";

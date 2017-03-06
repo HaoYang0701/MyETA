@@ -1,4 +1,4 @@
-package com.example.hao.myeta;
+package com.myeta;
 
 import android.app.Service;
 import android.content.Context;
@@ -24,9 +24,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.example.hao.myeta.MainActivity.DESTINATION_LATITUDE;
-import static com.example.hao.myeta.MainActivity.DESTINATION_LONGITUDE;
-import static com.example.hao.myeta.MainActivity.USERNAME;
+import static com.myeta.MainActivity.DESTINATION_LATITUDE;
+import static com.myeta.MainActivity.DESTINATION_LONGITUDE;
+import static com.myeta.MainActivity.USERNAME;
 
 public class LocationUpdateService extends Service {
   private volatile HandlerThread mHandlerThread;
@@ -84,7 +84,7 @@ public class LocationUpdateService extends Service {
               return;
             }
             session.setUser(tempusername);
-            com.example.hao.myeta.Location locationObject = new com.example.hao.myeta.Location();
+            com.myeta.Location locationObject = new com.myeta.Location();
             locationObject.setLatitude(location.getLatitude());
             locationObject.setLongitude(location.getLongitude());
             session.setLocation(locationObject);

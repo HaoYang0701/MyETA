@@ -34,6 +34,7 @@ import com.akexorcist.googledirection.GoogleDirection;
 import com.akexorcist.googledirection.constant.AvoidType;
 import com.akexorcist.googledirection.model.Direction;
 import com.akexorcist.googledirection.model.Leg;
+import com.example.hao.myeta.LocationAlarmManager;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.common.api.Status;
@@ -54,6 +55,8 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
+import com.stephentuso.welcome.WelcomeHelper;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -63,8 +66,8 @@ import butterknife.OnClick;
 import java.util.Map;
 import org.adw.library.widgets.discreteseekbar.DiscreteSeekBar;
 
-import static com.example.hao.myeta.ShareUtils.createPlaystoreIntent;
-import static com.example.hao.myeta.ShareUtils.createShareSessionIntent;
+import static com.myeta.ShareUtils.createPlaystoreIntent;
+import static com.myeta.ShareUtils.createShareSessionIntent;
 
 public class MainActivity extends AppCompatActivity implements
     NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback {
@@ -93,6 +96,7 @@ public class MainActivity extends AppCompatActivity implements
   private ValueEventListener queryListener;
   private boolean isFirstJoin = false;
   private boolean isPreviouslyStoredSession;
+  private WelcomeHelper welcomeScreen;
   private PlaceAutocompleteFragment autocompleteFragment;
   private static SessionAdapter sessionadapter;
   private String sessionId;
@@ -113,7 +117,11 @@ public class MainActivity extends AppCompatActivity implements
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
+    welcomeScreen = new WelcomeHelper(this, MyEtaWelcome.class);
+    welcomeScreen.show(savedInstanceState);
+
     super.onCreate(savedInstanceState);
+
     setContentView(R.layout.activity_main);
     ButterKnife.bind(this);
     setSupportActionBar(toolbar);
@@ -207,8 +215,10 @@ public class MainActivity extends AppCompatActivity implements
   @Override
   protected void onDestroy() {
     super.onDestroy();
-    mfirebaseDatabase.removeEventListener(queryListener);
-    queryListener = null;
+    if (mfirebaseDatabase != null){
+      mfirebaseDatabase.removeEventListener(queryListener);
+      queryListener = null;
+    }
   }
 
   @Override
@@ -329,7 +339,7 @@ public class MainActivity extends AppCompatActivity implements
   }
 
   private void initializeVariables() {
-    prefs = this.getSharedPreferences("com.example.hao.myeta", Context.MODE_PRIVATE);
+    prefs = this.getSharedPreferences("com.myeta", Context.MODE_PRIVATE);
     listOfMarkers = new ArrayList();
     listOfSession = new ArrayList();
     dialogManager = new DialogManager();
@@ -365,7 +375,7 @@ public class MainActivity extends AppCompatActivity implements
           endLocation = new Session();
           endLocation.setUser(user);
 
-          com.example.hao.myeta.Location location = new com.example.hao.myeta.Location();
+          com.myeta.Location location = new com.myeta.Location();
 
           location.setLatitude(place.getLatLng().latitude);
           location.setLongitude(place.getLatLng().longitude);
@@ -398,7 +408,7 @@ public class MainActivity extends AppCompatActivity implements
         //add user location
         Session session = new Session();
         session.setUser(user);
-        com.example.hao.myeta.Location location = new com.example.hao.myeta.Location();
+        com.myeta.Location location = new com.myeta.Location();
 
         if (currentUserLocation != null) {
           location.setLatitude(currentUserLocation.getLatitude());
@@ -449,7 +459,7 @@ public class MainActivity extends AppCompatActivity implements
   }
 
   private void addStartDestinationSteps(Location currentUserLocation,
-                                        com.example.hao.myeta.Location location) {
+                                        com.myeta.Location location) {
     if (location == null || currentUserLocation == null){
       CharSequence text = getString(R.string.please_check_connection);
       int duration = Toast.LENGTH_LONG;
@@ -527,7 +537,7 @@ public class MainActivity extends AppCompatActivity implements
   }
 
   private void clearAllSettings() {
-    if (queryListener != null) {
+    if (queryListener != null && mfirebaseDatabase != null) {
       mfirebaseDatabase.removeEventListener(queryListener);
     }
 
@@ -581,7 +591,7 @@ public class MainActivity extends AppCompatActivity implements
 
         Session newSession = new Session();
         newSession.setUser(newSessionName);
-        com.example.hao.myeta.Location location = new com.example.hao.myeta.Location();
+        com.myeta.Location location = new com.myeta.Location();
 
         if (currentUserLocation != null) {
           location.setLatitude(currentUserLocation.getLatitude());
@@ -660,7 +670,7 @@ public class MainActivity extends AppCompatActivity implements
             //if the first call when joined : the user has no idea about destination.
             //we have to add destination from firebase into our app
             addStartDestinationSteps(currentUserLocation,
-                new com.example.hao.myeta.Location(savedSession.getLocation().getLatitude(),
+                new com.myeta.Location(savedSession.getLocation().getLatitude(),
                     savedSession.getLocation().getLongitude()));
           }
         }

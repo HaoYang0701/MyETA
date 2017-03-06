@@ -1,4 +1,4 @@
-package com.example.hao.myeta;
+package com.myeta;
 
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
